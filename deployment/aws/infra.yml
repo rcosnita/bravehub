@@ -1,0 +1,700 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Bravehub AWS platform infrastructure deployment.
+Parameters:
+  StackName:
+    Type: String
+    Description: The cloudformation friendly name.
+  BravehubEnv:
+    Type: String
+    Description: The bravehub environment we are currently creating.
+    AllowedValues:
+      - dev
+      - stage
+      - prod
+  StackCidrPrefix:
+    Type: String
+    Description: The CIDR prefix we want to assign for the new environment. We apply /16 mask on it.
+  RouterInstanceType:
+    Type: String
+    Description: Decides the instance type we use for the public routing layer.
+  RouterInstanceSpotPrice:
+    Type: String
+    Description: Decides the spot price we are willing to pay for obtaining cheap router instances.
+  RouterMinCapacity:
+    Type: String
+    Description: The minimum number of router instances.
+  RouterMaxCapacity:
+    Type: String
+    Description: The maximum number of router instances.
+  RouterDesiredCapacity:
+    Type: String
+    Description: The desired number of router instances.
+  RouterInstanceTypeSpot:
+    Type: String
+    Description: Decides the instance type we use for the public router layer from the spot instances pool.
+  RouterMinCapacitySpot:
+    Type: String
+    Description: The minimum number of router instances which are speculative.
+  RouterMaxCapacitySpot:
+    Type: String
+    Description: The maximum number of router instances which are speculative.
+  RouterDesiredCapacitySpot:
+    Type: String
+    Description: The desired number of router instances which are speculative.
+  SwarmMasterInstanceType:
+    Type: String
+    Description: The instance type we want to use for docker swarm master nodes.
+  SwarmMasterCapacity:
+    Type: String
+    Description: The number of master nodes we place in the deterministic scaling group.
+  SwarmMasterSpotPrice:
+    Type: String
+    Description: The price we are willing to pay for every master node placed in the speculative scaling group.
+  SwarmMasterCapacitySpot:
+    Type: String
+    Description: The number of master nodes we place in speculative scaling group.
+  SwarmWorkerInstanceType:
+    Type: String
+    Description: The instance type we want to use for docker swarm worker nodes.
+  SwarmWorkerCapacity:
+    Type: String
+    Description: The number of worker nodes we place in the deterministic scaling group.
+  SwarmWorkerSpotPrice:
+    Type: String
+    Description: The price we are willing to pay for every worker node placed in the speculative scaling group.
+  SwarmWorkerCapacitySpot:
+    Type: String
+    Description: The number of worker nodes we place in the speculative scaling group.
+Mappings:
+  RegionAZsMap:
+    eu-west-1:
+      "AZs": [ "eu-west-1a", "eu-west-1b" ]
+      "RouterImage": "ami-d7b9a2b1"
+      "SwarmMasterImage": "ami-d7b9a2b1"
+      "SwarmWorkerImage": "ami-d7b9a2b1"
+Resources:
+  RegionalVpc:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".0.0/16"]]
+      EnableDnsSupport: "true"
+      EnableDnsHostnames: "true"
+      Tags:
+        - Key: Name
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+  RegionalVpcIgw:
+    Type: "AWS::EC2::InternetGateway"
+    Properties:
+      Tags:
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+  RegionalVpcIgwAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      VpcId: !Ref RegionalVpc
+      InternetGatewayId: !Ref RegionalVpcIgw
+  RegionalVpcRouterTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref RegionalVpc
+      Tags:
+        - Key: Name
+          Value: router-routing-table
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "routing-api-gateway"
+  RegionalVpcRouterTableInternetAccess:
+    Type: "AWS::EC2::Route"
+    DependsOn: RegionalVpcIgwAttachment
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref RegionalVpcRouterTable
+      GatewayId: !Ref RegionalVpcIgw
+  RegionalVpcRouterSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 0, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".1.0/24" ] ]
+      MapPublicIpOnLaunch: "true"
+      VpcId: !Ref RegionalVpc
+      Tags:
+        - Key: Name
+          Value: subnet-router-1
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "routing-api-gateway"
+  RegionalVpcRouterSubnet1Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RegionalVpcRouterTable
+      SubnetId: !Ref RegionalVpcRouterSubnet1
+  RegionalVpcNatIP:
+    Type: "AWS::EC2::EIP"
+    DependsOn: RegionalVpcIgwAttachment
+    Properties:
+      Domain: vpc
+  RegionalVpcNat:
+    Type: "AWS::EC2::NatGateway"
+    DependsOn: RegionalVpcIgwAttachment
+    Properties:
+      AllocationId: !GetAtt [ RegionalVpcNatIP, "AllocationId" ]
+      SubnetId: !Ref RegionalVpcRouterSubnet1
+  RegionalVpcRouterSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 1, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".2.0/24" ] ]
+      MapPublicIpOnLaunch: "true"
+      VpcId: !Ref RegionalVpc
+      Tags:
+        - Key: Name
+          Value: subnet-router-2
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "routing-api-gateway"
+  RegionalVpcRouterSubnet2Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RegionalVpcRouterTable
+      SubnetId: !Ref RegionalVpcRouterSubnet2
+  RouterSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: router-sg
+      GroupDescription: Security group for controlling inbound / outbound rules for the public router instances.
+      VpcId: !Ref RegionalVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: router-sg
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "routing-api-gateway"
+  RouterAutoScalingLaunchConfig:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    DependsOn: RegionalVpcIgwAttachment
+    Properties:
+      AssociatePublicIpAddress: "true"
+      ImageId: !FindInMap [ "RegionAZsMap", Ref: "AWS::Region", "RouterImage" ]
+      InstanceMonitoring: true
+      InstanceType: !Ref RouterInstanceType
+      KeyName: !Ref StackName
+      SecurityGroups:
+        - !Ref RouterSecurityGroup
+      UserData: ""
+  RouterAutoScaling:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AvailabilityZones:
+        - !Select [ 0, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+        - !Select [ 1, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      DesiredCapacity: !Ref RouterDesiredCapacity
+      MaxSize: !Ref RouterMaxCapacity
+      MinSize: !Ref RouterMinCapacity
+      LaunchConfigurationName: !Ref RouterAutoScalingLaunchConfig
+      VPCZoneIdentifier:
+        - !Ref RegionalVpcRouterSubnet1
+        - !Ref RegionalVpcRouterSubnet2
+      Tags:
+        - Key: Name
+          Value: router-scaling-group
+          PropagateAtLaunch: true
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+          PropagateAtLaunch: true
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+          PropagateAtLaunch: true
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv        
+          PropagateAtLaunch: true
+        - Key: "bravehub:layer"
+          Value: "routing-api-gateway"
+          PropagateAtLaunch: true
+        - Key: "bravehub:scaler"
+          Value: "deterministic"
+          PropagateAtLaunch: true
+  RouterAutoScalingLaunchConfigSpot:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    DependsOn: RegionalVpcIgwAttachment
+    Properties:
+      AssociatePublicIpAddress: "true"
+      ImageId: !FindInMap [ "RegionAZsMap", Ref: "AWS::Region", "RouterImage" ]
+      InstanceMonitoring: true
+      InstanceType: !Ref RouterInstanceTypeSpot
+      KeyName: !Ref StackName
+      SecurityGroups:
+        - !Ref RouterSecurityGroup
+      SpotPrice: !Ref RouterInstanceSpotPrice
+      UserData: ""
+  RouterAutoScalingSpot:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AvailabilityZones:
+        - !Select [ 0, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+        - !Select [ 1, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      DesiredCapacity: !Ref RouterDesiredCapacitySpot
+      MaxSize: !Ref RouterMaxCapacitySpot
+      MinSize: !Ref RouterMinCapacitySpot
+      LaunchConfigurationName: !Ref RouterAutoScalingLaunchConfig
+      VPCZoneIdentifier:
+        - !Ref RegionalVpcRouterSubnet1
+        - !Ref RegionalVpcRouterSubnet2
+      Tags:
+        - Key: Name
+          Value: router-scaling-group
+          PropagateAtLaunch: true
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+          PropagateAtLaunch: true
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+          PropagateAtLaunch: true
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv        
+          PropagateAtLaunch: true
+        - Key: "bravehub:layer"
+          Value: "routing-api-gateway"
+          PropagateAtLaunch: true
+        - Key: "bravehub:scaler"
+          Value: "speculative"
+          PropagateAtLaunch: true
+  RegionalVpcSwarmMasterTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref RegionalVpc
+      Tags:
+        - Key: Name
+          Value: swarm-master-routing-table
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-master"
+  RegionalVpcSwarmMasterTableInternetAccess:
+    Type: "AWS::EC2::Route"
+    DependsOn: RegionalVpcIgwAttachment
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref RegionalVpcSwarmMasterTable
+      NatGatewayId: !Ref RegionalVpcNat
+  RegionalVpcSwarmMasterSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 0, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".11.0/24" ] ]
+      MapPublicIpOnLaunch: "false"
+      VpcId: !Ref RegionalVpc
+      Tags:
+        - Key: Name
+          Value: subnet-swarm-master-1
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-master"
+  RegionalVpcSwarmMasterSubnet1Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RegionalVpcSwarmMasterTable
+      SubnetId: !Ref RegionalVpcSwarmMasterSubnet1
+  RegionalVpcSwarmMasterSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 1, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".12.0/24" ] ]
+      MapPublicIpOnLaunch: "false"
+      VpcId: !Ref RegionalVpc
+      Tags:
+        - Key: Name
+          Value: subnet-swarm-master-2
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-master"
+  RegionalVpcSwarmMasterSubnet2Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RegionalVpcSwarmMasterTable
+      SubnetId: !Ref RegionalVpcSwarmMasterSubnet2
+  SwarmMasterSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: swarm-master-sg
+      GroupDescription: Security group for controlling inbound / outbound rules for the docker swarm master nodes.
+      VpcId: !Ref RegionalVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2377
+          ToPort: 2377
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: swarm-master-sg
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-master"
+  SwarmMasterAutoScalingLaunchConfig:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      AssociatePublicIpAddress: "false"
+      ImageId: !FindInMap [ "RegionAZsMap", Ref: "AWS::Region", "SwarmMasterImage" ]
+      InstanceMonitoring: true
+      InstanceType: !Ref SwarmMasterInstanceType
+      KeyName: !Ref StackName
+      SecurityGroups:
+        - !Ref SwarmMasterSecurityGroup
+      UserData: ""
+  SwarmMasterAutoScaling:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AvailabilityZones:
+        - !Select [ 0, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+        - !Select [ 1, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      DesiredCapacity: !Ref SwarmMasterCapacity
+      MaxSize: !Ref SwarmMasterCapacity
+      MinSize: !Ref SwarmMasterCapacity
+      LaunchConfigurationName: !Ref SwarmMasterAutoScalingLaunchConfig
+      VPCZoneIdentifier:
+        - !Ref RegionalVpcSwarmMasterSubnet1
+        - !Ref RegionalVpcSwarmMasterSubnet2
+      Tags:
+        - Key: Name
+          Value: swarm-master-scaling-group
+          PropagateAtLaunch: true
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+          PropagateAtLaunch: true
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+          PropagateAtLaunch: true
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv        
+          PropagateAtLaunch: true
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-master"
+          PropagateAtLaunch: true
+        - Key: "bravehub:scaler"
+          Value: "deterministic"
+          PropagateAtLaunch: true
+  SwarmMasterAutoScalingLaunchConfigSpot:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      AssociatePublicIpAddress: "false"
+      ImageId: !FindInMap [ "RegionAZsMap", Ref: "AWS::Region", "SwarmMasterImage" ]
+      InstanceMonitoring: true
+      InstanceType: !Ref SwarmMasterInstanceType
+      KeyName: !Ref StackName
+      SecurityGroups:
+        - !Ref SwarmMasterSecurityGroup
+      SpotPrice: !Ref SwarmMasterSpotPrice
+      UserData: ""
+  SwarmMasterAutoScalingSpot:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AvailabilityZones:
+        - !Select [ 0, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+        - !Select [ 1, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      DesiredCapacity: !Ref SwarmMasterCapacitySpot
+      MaxSize: !Ref SwarmMasterCapacitySpot
+      MinSize: !Ref SwarmMasterCapacitySpot
+      LaunchConfigurationName: !Ref SwarmMasterAutoScalingLaunchConfigSpot
+      VPCZoneIdentifier:
+        - !Ref RegionalVpcSwarmMasterSubnet1
+        - !Ref RegionalVpcSwarmMasterSubnet2
+      Tags:
+        - Key: Name
+          Value: swarm-master-scaling-group
+          PropagateAtLaunch: true
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+          PropagateAtLaunch: true
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+          PropagateAtLaunch: true
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv        
+          PropagateAtLaunch: true
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-master"
+          PropagateAtLaunch: true
+        - Key: "bravehub:scaler"
+          Value: "speculative"
+          PropagateAtLaunch: true
+  RegionalVpcSwarmWorkerTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref RegionalVpc
+      Tags:
+        - Key: Name
+          Value: swarm-worker-routing-table
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-worker"
+  RegionalVpcSwarmMasterWorkerInternetAccess:
+    Type: "AWS::EC2::Route"
+    DependsOn: RegionalVpcIgwAttachment
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref RegionalVpcSwarmWorkerTable
+      NatGatewayId: !Ref RegionalVpcNat
+  RegionalVpcSwarmWorkerSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 0, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".21.0/24" ] ]
+      MapPublicIpOnLaunch: "false"
+      VpcId: !Ref RegionalVpc
+      Tags:
+        - Key: Name
+          Value: subnet-swarm-worker-1
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-worker"
+  RegionalVpcSwarmWorkerSubnet1Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RegionalVpcSwarmWorkerTable
+      SubnetId: !Ref RegionalVpcSwarmWorkerSubnet1
+  RegionalVpcSwarmWorkerSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 1, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".22.0/24" ] ]
+      MapPublicIpOnLaunch: "false"
+      VpcId: !Ref RegionalVpc
+      Tags:
+        - Key: Name
+          Value: subnet-swarm-worker-2
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-worker"
+  RegionalVpcSwarmWorkerSubnet2Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RegionalVpcSwarmWorkerTable
+      SubnetId: !Ref RegionalVpcSwarmWorkerSubnet2
+  SwarmWorkerSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: swarm-worker-sg
+      GroupDescription: Security group for controlling inbound / outbound rules for the docker swarm worker nodes.
+      VpcId: !Ref RegionalVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 7946
+          ToPort: 7946
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 7946
+          ToPort: 7946
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: swarm-worker-sg
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-worker"
+  SwarmWorkerToWorkerClusterTcpRule:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      IpProtocol: tcp
+      FromPort: 7946
+      ToPort: 7946
+      SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+      GroupId: !Ref SwarmWorkerSecurityGroup
+  SwarmWorkerToWorkerClusterUdpRule:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      IpProtocol: udp
+      FromPort: 7946
+      ToPort: 7946
+      SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+      GroupId: !Ref SwarmWorkerSecurityGroup
+  SwarmWorkerAutoScalingLaunchConfig:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      AssociatePublicIpAddress: "false"
+      ImageId: !FindInMap [ "RegionAZsMap", Ref: "AWS::Region", "SwarmWorkerImage" ]
+      InstanceMonitoring: true
+      InstanceType: !Ref SwarmWorkerInstanceType
+      KeyName: !Ref StackName
+      SecurityGroups:
+        - !Ref SwarmWorkerSecurityGroup
+      UserData: ""
+  SwarmWorkerAutoScaling:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AvailabilityZones:
+        - !Select [ 0, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+        - !Select [ 1, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      DesiredCapacity: !Ref SwarmWorkerCapacity
+      MaxSize: !Ref SwarmWorkerCapacity
+      MinSize: !Ref SwarmWorkerCapacity
+      LaunchConfigurationName: !Ref SwarmWorkerAutoScalingLaunchConfig
+      VPCZoneIdentifier:
+        - !Ref RegionalVpcSwarmWorkerSubnet1
+        - !Ref RegionalVpcSwarmWorkerSubnet2
+      Tags:
+        - Key: Name
+          Value: swarm-worker-scaling-group
+          PropagateAtLaunch: true
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+          PropagateAtLaunch: true
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+          PropagateAtLaunch: true
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv        
+          PropagateAtLaunch: true
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-worker"
+          PropagateAtLaunch: true
+        - Key: "bravehub:scaler"
+          Value: "deterministic"
+          PropagateAtLaunch: true
+  SwarmWorkerAutoScalingLaunchConfigSpot:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      AssociatePublicIpAddress: "false"
+      ImageId: !FindInMap [ "RegionAZsMap", Ref: "AWS::Region", "SwarmWorkerImage" ]
+      InstanceMonitoring: true
+      InstanceType: !Ref SwarmWorkerInstanceType
+      KeyName: !Ref StackName
+      SecurityGroups:
+        - !Ref SwarmWorkerSecurityGroup
+      SpotPrice: !Ref SwarmWorkerSpotPrice
+      UserData: ""
+  SwarmWorkerAutoScalingSpot:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AvailabilityZones:
+        - !Select [ 0, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+        - !Select [ 1, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      DesiredCapacity: !Ref SwarmWorkerCapacitySpot
+      MaxSize: !Ref SwarmWorkerCapacitySpot
+      MinSize: !Ref SwarmWorkerCapacitySpot
+      LaunchConfigurationName: !Ref SwarmWorkerAutoScalingLaunchConfigSpot
+      VPCZoneIdentifier:
+        - !Ref RegionalVpcSwarmWorkerSubnet1
+        - !Ref RegionalVpcSwarmWorkerSubnet2
+      Tags:
+        - Key: Name
+          Value: swarm-worker-scaling-group
+          PropagateAtLaunch: true
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+          PropagateAtLaunch: true
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+          PropagateAtLaunch: true
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv        
+          PropagateAtLaunch: true
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-worker"
+          PropagateAtLaunch: true
+        - Key: "bravehub:scaler"
+          Value: "speculative"
+          PropagateAtLaunch: true
