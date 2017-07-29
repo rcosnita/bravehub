@@ -1,0 +1,22 @@
+{
+  "name": "bravehub-stage-stack",
+  "env": "stage",
+  "cidrPrefix": "10.1",
+  "routerInstanceType": "t2.micro",
+  "routerMinCapacity": 0,
+  "routerMaxCapacity": 5,
+  "routerDesiredCapacity": 0,
+  "routerSpotPrice": 0.0,
+  "routerInstanceTypeSpot": "m4.large",
+  "routerMinCapacitySpot": 0,
+  "routerMaxCapacitySpot": 5,
+  "routerDesiredCapacitySpot": 0,
+  "swarmMasterInstanceType": "t2.micro",
+  "swarmMasterCapacity": 0,
+  "swarmMasterSpotPrice": 0.0,
+  "swarmMasterCapacitySpot": 0,
+  "swarmWorkerInstanceType": "t2.micro",
+  "swarmWorkerCapacity": 0,
+  "swarmWorkerSpotPrice": 0.0,
+  "swarmWorkerCapacitySpot": 0
+}
