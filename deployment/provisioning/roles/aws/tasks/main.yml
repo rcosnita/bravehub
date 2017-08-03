@@ -1,0 +1,10 @@
+---
+- name: Add aws package.
+  become: yes
+  become_user: root
+  become_method: sudo
+  apt:
+    name: awscli
+    state: present
+  tags:
+    - aws

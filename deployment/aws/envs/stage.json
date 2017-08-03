@@ -10,7 +10,7 @@
   "routerInstanceTypeSpot": "m4.large",
   "routerMinCapacitySpot": 0,
   "routerMaxCapacitySpot": 5,
-  "routerDesiredCapacitySpot": 1,
+  "routerDesiredCapacitySpot": 0,
   "swarmMasterInstanceType": "t2.micro",
   "swarmMasterCapacity": 0,
   "swarmMasterSpotPrice": 0.0,
