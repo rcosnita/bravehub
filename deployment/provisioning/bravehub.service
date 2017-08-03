@@ -1,0 +1,11 @@
+[Unit]
+Description=Bravehub bootstrap service responsible for provisioning the current instance.
+Requires=network.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/home/ubuntu/instance-descriptor.sh
+ExecStart=/home/ubuntu/bravehub-bootstrap.sh ${STACK_NAME} ${ROLE}
+ExecStop=/bin/echo "Stop is not implemented ..."
+WorkingDirectory=/home/ubuntu
+RemainAfterExit=true

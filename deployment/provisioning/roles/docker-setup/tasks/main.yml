@@ -1,0 +1,103 @@
+---
+- name: Add apt-transport-https package.
+  become: yes
+  become_user: root
+  become_method: sudo
+  apt:
+    name: apt-transport-https
+    state: present
+  tags:
+    - docker-engine
+
+- name: Add ca-certificates package.
+  become: yes
+  become_user: root
+  become_method: sudo
+  apt:
+    name: ca-certificates
+    state: present
+  tags:
+    - docker-engine
+
+- name: Add curl package.
+  become: yes
+  become_user: root
+  become_method: sudo
+  apt:
+    name: curl
+    state: present
+  tags:
+    - docker-engine
+
+- name: Add software-properties-common package.
+  become: yes
+  become_user: root
+  become_method: sudo
+  apt:
+    name: software-properties-common
+    state: present
+  tags:
+    - docker-engine
+
+- name: Download docker official GPG key.
+  get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: ./docker.gpg
+  tags:
+    - docker-engine
+
+- name: Add docker official GPG key to apt.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: apt-key add ./docker.gpg
+  tags:
+    - docker-engine
+
+- name: Add docker official repository.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  tags:
+    - docker-engine
+
+- name: Update apt-get.
+  become: yes
+  become_user: root
+  become_method: sudo
+  apt:
+    update_cache: true
+  tags:
+    - docker-engine
+
+- name: Add docker group.
+  become: yes
+  become_user: root
+  become_method: sudo
+  group:
+    name: docker
+    state: present
+  tags:
+    - docker-engine
+
+- name: Add docker user.
+  become: yes
+  become_user: root
+  become_method: sudo
+  user:
+    name: docker
+    group: docker
+    state: present
+  tags:
+    - docker-engine
+
+- name: Add docker engine package.
+  become: yes
+  become_user: root
+  become_method: sudo
+  apt:
+    name: docker-ce=17.06.0~ce-0~ubuntu
+    state: present
+  tags:
+    - docker-engine

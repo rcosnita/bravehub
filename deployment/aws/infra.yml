@@ -211,7 +211,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 5.12.194.174/32
+          CidrIp: 84.117.250.171/32
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 0
@@ -262,7 +262,24 @@ Resources:
       KeyName: !Ref StackName
       SecurityGroups:
         - !Ref RouterSecurityGroup
-      UserData: ""
+      UserData:
+        Fn::Base64:
+          Fn::Join:
+            - "\n"
+            - - "#!/bin/sh"
+              - ""
+              - "PATH=$PATH:/usr/bin:/usr/sbin:/usr/local/bin"
+              - "apt-get install -y awscli"
+              - "cd /home/ubuntu"
+              - !Join ["", [ "echo 'export ROLE=router'", " >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
+              - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
+              - "chmod u+x bravehub-bootstrap.sh"
+              - "cp /home/ubuntu/bravehub.service /etc/systemd/user/bravehub.service"
+              - "systemctl enable /etc/systemd/user/bravehub.service"
+              - "systemctl daemon-reload"
+              - "systemctl start bravehub"
   RouterAutoScaling:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:
@@ -310,7 +327,24 @@ Resources:
       SecurityGroups:
         - !Ref RouterSecurityGroup
       SpotPrice: !Ref RouterInstanceSpotPrice
-      UserData: ""
+      UserData:
+        Fn::Base64:
+          Fn::Join:
+            - "\n"
+            - - "#!/bin/sh"
+              - ""
+              - "PATH=$PATH:/usr/bin:/usr/sbin:/usr/local/bin"
+              - "apt-get install -y awscli"
+              - "cd /home/ubuntu"
+              - !Join ["", [ "echo 'export ROLE=router'", " >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
+              - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
+              - "chmod u+x bravehub-bootstrap.sh"
+              - "cp /home/ubuntu/bravehub.service /etc/systemd/user/bravehub.service"
+              - "systemctl enable /etc/systemd/user/bravehub.service"
+              - "systemctl daemon-reload"
+              - "systemctl start bravehub"
   RouterAutoScalingSpot:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:
