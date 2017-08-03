@@ -58,4 +58,5 @@ STACK_PARAMS=(
 aws cloudformation ${STACK_ACTION} \
   --stack-name ${STACK_NAME} \
   --template-body file://$(pwd)/infra.yml \
-  --parameters ${STACK_PARAMS[*]}
+  --parameters ${STACK_PARAMS[*]} \
+  --capabilities CAPABILITY_IAM
