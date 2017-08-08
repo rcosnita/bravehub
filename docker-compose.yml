@@ -42,3 +42,72 @@ services:
       - "0.0.0.0:5020:5000"
     volumes:
       - ./provisioning-api:/root/provisioning-api
+  zookeeper-1.api.internal.bravehub-dev.com:
+    build: deployment/hadoop/zookeeper
+    hostname: zookeeper-1.api.internal.bravehub-dev.com
+    ports:
+      - "0.0.0.0:2181:2181"
+    environment:
+      # Read deployment/hadoop/zookeeper/conf/dev.cfg plain text representation
+      ZOOKEEPER_CONFIG: "dGlja1RpbWU9MjAwMApkYXRhRGlyPS92YXIvem9va2VlcGVyCmNsaWVudFBvcnQ9MjE4MQphdXRvcHVyZ2Uuc25hcFJldGFpbkNvdW50PTMK"
+    volumes:
+      - hadoop-zk-storage:/var/zookeeper
+  hbase-master-1.api.internal.bravehub-dev.com:
+    build: deployment/hadoop/hbase
+    depends_on:
+      - zookeeper-1.api.internal.bravehub-dev.com
+    hostname: hbase-master-1.api.internal.bravehub-dev.com
+    ports:
+      - "0.0.0.0:16000:16000"
+      - "0.0.0.0:16010:16010"
+    env_file:
+      - deployment/hadoop/hbase/conf/dev-hbase-environment.env
+    environment:
+      HBASE_CMD: "./bin/hbase-daemon.sh --config conf foreground_start master"
+    volumes:
+      - hadoop-hbase-storage:/var/hbase
+  hbase-master-2.api.internal.bravehub-dev.com:
+    build: deployment/hadoop/hbase
+    depends_on:
+      - zookeeper-1.api.internal.bravehub-dev.com
+    hostname: hbase-master-2.api.internal.bravehub-dev.com
+    ports:
+      - "0.0.0.0:16100:16000"
+      - "0.0.0.0:16110:16010"
+    env_file:
+      - deployment/hadoop/hbase/conf/dev-hbase-environment.env
+    environment:
+      HBASE_CMD: "./bin/hbase-daemon.sh --config conf foreground_start master"
+    volumes:
+      - hadoop-hbase-storage:/var/hbase
+  hbase-regionserver-1.api.internal.bravehub-dev.com:
+    build: deployment/hadoop/hbase
+    hostname: hbase-regionserver-1.api.internal.bravehub-dev.com
+    depends_on:
+      - zookeeper-1.api.internal.bravehub-dev.com
+      - hbase-master-1.api.internal.bravehub-dev.com
+    ports:
+      - "0.0.0.0:16030:16030"
+    env_file:
+      - deployment/hadoop/hbase/conf/dev-hbase-environment.env
+    environment:
+      HBASE_CMD: "./bin/hbase-daemon.sh --config conf foreground_start regionserver"
+    volumes:
+      - hadoop-hbase-storage:/var/hbase
+  hbase-regionserver-2.api.internal.bravehub-dev.com:
+    build: deployment/hadoop/hbase
+    hostname: hbase-regionserver-2.api.internal.bravehub-dev.com
+    depends_on:
+      - zookeeper-1.api.internal.bravehub-dev.com
+      - hbase-master-1.api.internal.bravehub-dev.com
+    ports:
+      - "0.0.0.0:16050:16030"
+    env_file:
+      - deployment/hadoop/hbase/conf/dev-hbase-environment.env
+    environment:
+      HBASE_CMD: "./bin/hbase-daemon.sh --config conf foreground_start regionserver"
+    volumes:
+      - hadoop-hbase-storage:/var/hbase
+volumes:
+  hadoop-zk-storage: { }
+  hadoop-hbase-storage: { }

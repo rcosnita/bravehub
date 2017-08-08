@@ -1,0 +1,18 @@
+<configuration>
+  <property>
+    <name>hbase.rootdir</name>
+    <value>/var/hbase</value>
+  </property>
+  <property>
+    <name>hbase.zookeeper.quorum</name>
+    <value>zookeeper-1.api.internal.bravehub-dev.com</value>
+  </property>
+  <property>
+    <name>hbase.cluster.distributed</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>hbase.regionserver.hostname</name>
+    <value>{{hbase.regionserver.hostname}}</value>
+  </property>
+</configuration>
