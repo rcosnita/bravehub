@@ -108,6 +108,46 @@ services:
       HBASE_CMD: "./bin/hbase-daemon.sh --config conf foreground_start regionserver"
     volumes:
       - hadoop-hbase-storage:/var/hbase
+  hbase-thrift.api.internal.bravehub-dev.com:
+    build: deployment/hadoop/hbase
+    hostname: hbase-thrift.api.internal.bravehub-dev.com
+    depends_on:
+      - hbase-master-1.api.internal.bravehub-dev.com
+      - hbase-master-2.api.internal.bravehub-dev.com
+      - hbase-regionserver-1.api.internal.bravehub-dev.com
+      - hbase-regionserver-2.api.internal.bravehub-dev.com
+    ports:
+      - "0.0.0.0:9090:9090"
+      - "0.0.0.0:9100:9100"
+    env_file:
+      - deployment/hadoop/hbase/conf/dev-hbase-environment.env
+    environment:
+      HBASE_CMD: "./bin/hbase-daemon.sh --config conf foreground_start thrift --port 9090 --infoport 9100"
+    volumes:
+      - hadoop-hbase-storage:/var/hbase
+  bravehub-setup-database:
+    build: deployment/bravehub
+    depends_on:
+      - hbase-master-1.api.internal.bravehub-dev.com
+      - hbase-master-2.api.internal.bravehub-dev.com
+      - hbase-regionserver-1.api.internal.bravehub-dev.com
+      - hbase-regionserver-2.api.internal.bravehub-dev.com
+    env_file:
+      - deployment/hadoop/hbase/conf/dev-hbase-environment.env
+    environment:
+      SCRIPT_NAME: "~/scripts/hbase/00-create-data-model.txt"
+    volumes:
+      - ./deployment/bravehub/scripts:/root/scripts:ro
+  bravehub-examples:
+    build: deployment/examples
+    depends_on:
+      - bravehub-setup-database
+      - hbase-thrift.api.internal.bravehub-dev.com
+    environment:
+      HBASE_THRIFT_API: hbase-thrift.api.internal.bravehub-dev.com
+      DELAYED_START_MS: 10000
+    volumes:
+      - ./deployment/examples/python:/root/python:ro
 volumes:
   hadoop-zk-storage: { }
   hadoop-hbase-storage: { }
