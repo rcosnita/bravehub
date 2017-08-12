@@ -4,6 +4,9 @@ Parameters:
   StackName:
     Type: String
     Description: The cloudformation friendly name.
+  DnsSuffix:
+    Type: String
+    Description: The dns suffix used for creating multiple hosted zones required by the platform.
   BravehubEnv:
     Type: String
     Description: The bravehub environment we are currently creating.
@@ -136,6 +139,26 @@ Resources:
       DestinationCidrBlock: "0.0.0.0/0"
       RouteTableId: !Ref RegionalVpcRouterTable
       GatewayId: !Ref RegionalVpcIgw
+  RegionalVpcInternalApiDns:
+    Type: "AWS::Route53::HostedZone"
+    Properties:
+      HostedZoneConfig:
+        Comment: Internal api zone used for platform service discovery.
+      HostedZoneTags:
+        - Key: Name
+          Value: !Join [ "", [ "api.internal.", !Ref DnsSuffix, ".com" ] ]
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "internal-service-discovery"
+      Name: !Join [ "", [ "api.internal.", !Ref DnsSuffix ] ]
+      VPCs:
+        - VPCId: !Ref RegionalVpc
+          VPCRegion: !Ref "AWS::Region"
   RegionalVpcRouterSubnet1:
     Type: "AWS::EC2::Subnet"
     Properties:
@@ -242,6 +265,26 @@ Resources:
             Action: 
               - "sts:AssumeRole"
       Path: "/"
+      Policies:
+        - PolicyName: "ec2-permissions"
+          PolicyDocument:
+            Version : "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "ec2:DescribeInstances"
+                Resource: "*"
+        - PolicyName: "route53-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "route53:GetHostedZone"
+                  - "route53:ChangeResourceRecordSets"
+                Resource: !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcInternalApiDns ] ]
   RouterAutoScalingIamProfile:                
     Type: "AWS::IAM::InstanceProfile"
     Properties: 
@@ -273,9 +316,11 @@ Resources:
               - "cd /home/ubuntu"
               - !Join ["", [ "echo 'export ROLE=router'", " >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
               - "chmod u+x bravehub-bootstrap.sh"
+              - "chown -R ubuntu:ubuntu ."
               - "cp /home/ubuntu/bravehub.service /etc/systemd/user/bravehub.service"
               - "systemctl enable /etc/systemd/user/bravehub.service"
               - "systemctl daemon-reload"
@@ -338,9 +383,11 @@ Resources:
               - "cd /home/ubuntu"
               - !Join ["", [ "echo 'export ROLE=router'", " >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
               - "chmod u+x bravehub-bootstrap.sh"
+              - "chown -R ubuntu:ubuntu ."
               - "cp /home/ubuntu/bravehub.service /etc/systemd/user/bravehub.service"
               - "systemctl enable /etc/systemd/user/bravehub.service"
               - "systemctl daemon-reload"

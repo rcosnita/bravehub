@@ -1,5 +1,6 @@
 {
   "name": "bravehub-stage-stack",
+  "dnsSuffix": "bravehub-stage.com",
   "env": "stage",
   "cidrPrefix": "10.1",
   "routerInstanceType": "t2.micro",
