@@ -5,6 +5,7 @@ STACK_CONFIG_FILE=${1:-envs/stage.json}
 STACK_ACTION=${2:-update-stack}
 
 STACK_NAME=$(jq --raw-output .name ${STACK_CONFIG_FILE})
+STACK_DNS_SUFFIX=$(jq --raw-output .dnsSuffix ${STACK_CONFIG_FILE})
 STACK_ENV=$(jq --raw-output .env ${STACK_CONFIG_FILE})
 STACK_CIDR_PREFIX=$(jq --raw-output .cidrPrefix ${STACK_CONFIG_FILE})
 
@@ -34,6 +35,7 @@ echo "Stack name: ${STACK_NAME}"
 
 STACK_PARAMS=(
   ParameterKey=StackName,ParameterValue=${STACK_NAME}
+  ParameterKey=DnsSuffix,ParameterValue=${STACK_DNS_SUFFIX}
   ParameterKey=BravehubEnv,ParameterValue=${STACK_ENV}
   ParameterKey=StackCidrPrefix,ParameterValue=${STACK_CIDR_PREFIX}
   ParameterKey=RouterInstanceType,ParameterValue=${STACK_ROUTER_INSTANCE_TYPE}

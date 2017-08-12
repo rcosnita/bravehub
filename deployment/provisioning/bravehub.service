@@ -3,6 +3,8 @@ Description=Bravehub bootstrap service responsible for provisioning the current 
 Requires=network.target
 
 [Service]
+User=ubuntu
+Group=ubuntu
 Type=oneshot
 EnvironmentFile=-/home/ubuntu/instance-descriptor.sh
 ExecStart=/home/ubuntu/bravehub-bootstrap.sh ${STACK_NAME} ${ROLE}

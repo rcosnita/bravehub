@@ -3,3 +3,4 @@
   roles:
     - aws
     - docker-setup
+    - router-setup

@@ -1,0 +1,6 @@
+local:
+  hosts:
+    127.0.0.1:
+      ansible_connection: local
+      home_folder: /home/ubuntu
+      dns_ttl: 30

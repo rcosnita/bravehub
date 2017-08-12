@@ -8,3 +8,13 @@
     state: present
   tags:
     - aws
+
+- name: Add jq package.
+  become: yes
+  become_user: root
+  become_method: sudo
+  apt:
+    name: jq
+    state: present
+  tags:
+    - aws
