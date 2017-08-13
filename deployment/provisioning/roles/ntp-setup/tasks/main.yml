@@ -1,0 +1,98 @@
+---
+- name: Disable timedatectl.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: timedatectl set-ntp off
+  tags:
+    - ntp-setup
+
+- name: Install ntp.
+  become: yes
+  become_user: root
+  become_method: sudo
+  apt:
+    name: ntp
+    state: present    
+  tags:
+    - ntp-setup
+
+- name: Install ntpstat.
+  become: yes
+  become_user: root
+  become_method: sudo
+  apt:
+    name: ntpstat
+    state: present    
+  tags:
+    - ntp-setup
+
+- name: Setup awscli.
+  include_role:
+    name: aws
+    tasks_from: awscli-configure
+  tags:
+    - ntp-setup
+
+- name: Resolve the ntp domain name.
+  shell: "echo {{lookup('dig', 'ntp.{{API_ZONE_NAME_STR}}/A')}}"
+  register: CURR_NTP_SERVER
+  tags:
+    - ntp-setup
+
+- name: Determine if ntp server is responsive.
+  shell: "ntpq -p {{CURR_NTP_SERVER.stdout}}"
+  register: CURR_NTP_SERVER_STATUS
+  when: CURR_NTP_SERVER.stdout != "NXDOMAIN"
+  tags:
+    - ntp-setup
+
+- set_fact:
+    NTP_IS_SERVER: "{{CURR_NTP_SERVER.stdout == \"NXDOMAIN\" or CURR_NTP_SERVER.stdout == HOST_IP_STR or (CURR_NTP_SERVER_STATUS and CURR_NTP_SERVER_STATUS.stderr_lines|length > 0)}}"
+
+- name: Configures ntp server config.
+  become: yes
+  become_user: root
+  become_method: sudo
+  copy:
+    src: etc/ntp-server.conf
+    dest: /etc/ntp.conf
+  when: NTP_IS_SERVER
+  tags:
+    - ntp-setup
+
+- name: Configures ntp client config.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: etc/ntp-client.conf.j2
+    dest: /etc/ntp.conf
+  vars:
+    DOMAIN_NAME: "ntp.{{API_ZONE_NAME_STR}}"
+  when: not NTP_IS_SERVER
+  tags:
+    - ntp-setup
+
+
+- name: Restart ntp server.
+  become: yes
+  become_user: root
+  become_method: sudo
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: ntp
+    state: restarted
+  tags:
+    - ntp-setup
+
+- name: Store ntp dns entry.
+  include_role:
+    name: aws
+    tasks_from: aws-setrecord.yml
+  vars:
+    DOMAIN_NAME: "ntp.{{API_ZONE_NAME_STR}}"
+  when: NTP_IS_SERVER
+  tags:
+    - ntp-setup

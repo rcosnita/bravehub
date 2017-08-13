@@ -1,0 +1,20 @@
+{
+  "Comment": "Update the router settings",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "{{DOMAIN_NAME}}",
+        "Type": "A",
+        "SetIdentifier": "{{DOMAIN_NAME}}",
+        "TTL": {{dns_ttl}},
+        "Region": "{{AWS_REGION.stdout}}",
+        "ResourceRecords": [
+          {
+            "Value": "{{HOST_IP_STR}}"
+          }
+        ]
+      }
+    }
+  ]
+}
