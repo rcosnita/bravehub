@@ -1,0 +1,24 @@
+---
+- name: Obtain AWS_REGION.
+  shell: curl http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/.$//'
+  register: AWS_REGION
+
+- name: Obtain API_ZONE_NAME.
+  shell: . {{home_folder}}/instance-descriptor.sh && aws route53 get-hosted-zone --id ${API_ZONE_ID} | jq .HostedZone.Name | sed 's/\"//' | sed 's/\"//' | sed 's/.$//'
+  register: API_ZONE_NAME
+
+- name: Remove previously saved API_ZONE_NAME.
+  shell: sed -i 's/export API_ZONE_NAME=.*//' {{home_folder}}/instance-descriptor.sh
+
+- name: Persist API_ZONE_NAME.
+  shell: echo "export API_ZONE_NAME={{API_ZONE_NAME.stdout}}" >> {{home_folder}}/instance-descriptor.sh
+
+- set_fact:
+    API_ZONE_NAME_STR: "{{API_ZONE_NAME.stdout}}"
+
+- name: "Obtain current host ip."
+  shell: curl http://169.254.169.254/latest/meta-data/local-ipv4
+  register: HOST_IP
+
+- set_fact:
+    HOST_IP_STR: "{{HOST_IP.stdout}}"
