@@ -289,6 +289,41 @@ Resources:
       SecurityGroups:
         - !Ref FileSystemStorageSecurityGroup
       SubnetId: !Ref RegionalVpcFileSystemStorageSubnet2
+  ZookeeperSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: zookeeper-sg
+      GroupDescription: Security group for controlling inbound / outbound rules for the hadoop zookeeper.
+      VpcId: !Ref RegionalVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2181
+          ToPort: 2181
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2181
+          ToPort: 2181
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2181
+          ToPort: 2181
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: zookeeper-sg
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "hadoop-zookeeper"
   RegionalVpcRouterTable:
     Type: "AWS::EC2::RouteTable"
     Properties:
@@ -443,6 +478,14 @@ Resources:
         ToPort: 123
         GroupId: !Ref RouterSecurityGroup
         SourceSecurityGroupId: !Ref RouterSecurityGroup
+  RouterSecurityGroupZookeeperNtpIngress:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+        IpProtocol: udp
+        FromPort: 123
+        ToPort: 123
+        GroupId: !Ref RouterSecurityGroup
+        SourceSecurityGroupId: !Ref ZookeeperSecurityGroup
   RouterSecurityGroupSwarmMasterNtpIngress:
     Type: "AWS::EC2::SecurityGroupIngress"
     Properties:
@@ -522,6 +565,7 @@ Resources:
       KeyName: !Ref StackName
       SecurityGroups:
         - !Ref RouterSecurityGroup
+        - !Ref ZookeeperSecurityGroup
       UserData:
         Fn::Base64:
           Fn::Join:
@@ -588,6 +632,7 @@ Resources:
       KeyName: !Ref StackName
       SecurityGroups:
         - !Ref RouterSecurityGroup
+        - !Ref ZookeeperSecurityGroup
       SpotPrice: !Ref RouterInstanceSpotPrice
       UserData:
         Fn::Base64:

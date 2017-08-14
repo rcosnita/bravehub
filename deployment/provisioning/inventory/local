@@ -5,3 +5,9 @@ local:
       home_folder: /home/ubuntu
       dns_ttl: 30
       shared_storage: /opt/shared-storage
+      provisioning_storage: /opt/shared-storage/provisioning
+      zookeeper_uid: 2000
+      zookeeper_home: /home/zookeeper
+      zookeeper_version: 0.1.0
+      zookeeper_max_instances: 1
+      zookeeper_pattern: zookeeper

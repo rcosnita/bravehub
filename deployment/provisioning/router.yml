@@ -6,3 +6,4 @@
     - docker-setup
     - router-setup
     - shared-storage-setup
+    - zookeeper-setup

@@ -13,6 +13,7 @@ rm -Rf provisioning
 mkdir provisioning
 cd provisioning
 aws s3 cp s3://${STACK_NAME}/provisioning/requirements.txt .
+aws s3 cp --recursive s3://${STACK_NAME}/provisioning/images images/
 aws s3 cp --recursive s3://${STACK_NAME}/provisioning/inventory inventory/
 aws s3 cp --recursive s3://${STACK_NAME}/provisioning/roles roles/
 aws s3 cp s3://${STACK_NAME}/provisioning/${ROLE}.yml .

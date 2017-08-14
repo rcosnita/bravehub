@@ -101,3 +101,11 @@
     state: present
   tags:
     - docker-engine
+
+- name: Import all proprietary images.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: find {{home_folder}}/provisioning/images -name *.tar | xargs docker load -i
+  tags:
+    - docker-engine
