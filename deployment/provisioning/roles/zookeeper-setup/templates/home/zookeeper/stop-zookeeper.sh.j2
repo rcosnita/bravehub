@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+CONTAINER_ID=$(cat {{zookeeper_home}}/zookeeper.pid)
+docker rm -f ${CONTAINER_ID}
+rm -f {{zookeeper_home}}/zookeeper.pid

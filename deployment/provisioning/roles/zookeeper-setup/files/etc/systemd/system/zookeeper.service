@@ -1,0 +1,13 @@
+[Unit]
+Description=Bravehub zookeper management script.
+Requires=network.target
+
+[Service]
+User=zookeeper
+Group=docker
+Type=oneshot
+EnvironmentFile=-/home/ubuntu/instance-descriptor.sh
+ExecStart=/home/zookeeper/start-zookeeper.sh
+ExecStop=/home/zookeeper/stop-zookeeper.sh
+WorkingDirectory=/home/zookeeper
+RemainAfterExit=true

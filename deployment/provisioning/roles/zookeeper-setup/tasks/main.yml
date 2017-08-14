@@ -1,0 +1,126 @@
+---
+- name: Setup awscli.
+  include_role:
+    name: aws
+    tasks_from: awscli-configure
+  tags:
+    - zookeeper-setup
+
+- name: Create the zookeeper user.
+  become: yes
+  become_user: root
+  become_method: sudo
+  user:
+    name: zookeeper
+    uid: "{{zookeeper_uid}}"
+    comment: "Zookeeper user."
+    state: present
+    group: docker
+  tags:
+    - zookeeper-setup
+
+- name: Determine the zookeeper master hostname.
+  include_role:
+    name: shared-storage-setup
+    tasks_from: server-hostname
+  vars:
+    SERVER_HOSTNAME_LOCK_FILE: "{{provisioning_storage}}/zookeeper-master.lock"
+    SERVER_HOSTNAME_FILE: "{{zookeeper_home}}/zookeeper-master-hostname"
+    SERVER_MAX_INSTANCES: "{{zookeeper_max_instances}}"
+    SERVER_INVENTORY_FILE: "{{provisioning_storage}}/zookeeper-servers.json"
+    SERVER_NAME_PATTERN: "{{zookeeper_pattern}}.{{API_ZONE_NAME_STR}}"
+  tags:
+    - zookeeper-setup
+
+- set_fact:
+    ZOOKEEPER_HOSTNAME: "{{SERVER_HOSTNAME}}"
+
+- set_fact:
+    ZOOKEEPER_IS_SERVER: "{{ZOOKEEPER_HOSTNAME != \"\"}}"
+
+- name: Store zookeeper dns entry.
+  include_role:
+    name: aws
+    tasks_from: aws-setrecord.yml
+  vars:
+    DOMAIN_NAME: "{{ZOOKEEPER_HOSTNAME}}"
+  when: ZOOKEEPER_IS_SERVER
+  tags:
+    - zookeeper-setup
+
+- name: Copy the start script.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: home/zookeeper/start-zookeeper.sh.j2
+    dest: "{{zookeeper_home}}/start-zookeeper.sh"
+    owner: zookeeper
+    mode: 0760
+  when: ZOOKEEPER_IS_SERVER
+  tags:
+    - zookeeper-setup
+
+- name: Copy the stop script.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: home/zookeeper/stop-zookeeper.sh.j2
+    dest: "{{zookeeper_home}}/stop-zookeeper.sh"
+    owner: zookeeper
+    mode: 0760
+  when: ZOOKEEPER_IS_SERVER
+  tags:
+    - zookeeper-setup
+
+- name: Create the zookeeper data storage.
+  become: yes
+  become_user: root
+  become_method: sudo
+  file:
+    path: "{{shared_storage}}/zookeeper"
+    state: directory
+    group: root
+    owner: zookeeper
+    mode: "u+rw,g+r,o-r"
+  when: ZOOKEEPER_IS_SERVER
+  tags:
+    - zookeeper-setup
+
+- name: Copy the zookeeper configuration.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: home/zookeeper/zkConf.cfg.j2
+    dest: "{{zookeeper_home}}/zkConf.cfg"
+    group: root
+    owner: zookeeper
+  when: ZOOKEEPER_IS_SERVER
+  tags:
+    - zookeeper-setup
+
+- name: Copy the zookeeper systemd.
+  become: yes
+  become_user: root
+  become_method: sudo
+  copy:
+    src: etc/systemd/system/zookeeper.service
+    dest: /etc/systemd/system/zookeeper.service
+  when: ZOOKEEPER_IS_SERVER
+  tags:
+    - zookeeper-setup
+
+- name: Start zookeeper service.
+  become: yes
+  become_user: root
+  become_method: sudo
+  systemd:
+    daemon_reload: yes
+    name: zookeeper
+    enabled: yes
+    state: restarted
+  when: ZOOKEEPER_IS_SERVER
+  tags:
+    - zookeeper-setup
