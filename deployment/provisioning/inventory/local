@@ -4,3 +4,4 @@ local:
       ansible_connection: local
       home_folder: /home/ubuntu
       dns_ttl: 30
+      shared_storage: /opt/shared-storage

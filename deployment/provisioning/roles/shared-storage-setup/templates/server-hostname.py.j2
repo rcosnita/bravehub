@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+
+import json
+import os
+import sys
+
+if __name__ == "__main__":
+  MAX_SERVERS = int(sys.argv[1])
+  HOSTNAMES_FILE = sys.argv[2]
+  HOSTNAME_FILE = sys.argv[3]
+  HOSTNAME_PATTERN = sys.argv[4]
+  hostnames = None
+
+  if os.path.exists(HOSTNAME_FILE):
+    with open(HOSTNAME_FILE, "r") as f:
+      print(f.read())
+      sys.exit(0)
+
+  if not os.path.exists(HOSTNAMES_FILE):
+    with open(HOSTNAMES_FILE, "w+") as f:
+        f.write("[]")
+
+  with open(HOSTNAMES_FILE, "r") as f:
+    hostnames = json.load(f)
+
+  hostname = None
+  for idx in range(1, MAX_SERVERS + 1):
+    curr_hostname = HOSTNAME_PATTERN.format(idx)
+
+    if curr_hostname not in hostnames:
+      hostname = curr_hostname
+      break
+
+  if not hostname:
+    sys.exit(0)
+
+  hostnames.append(hostname)
+  with open(HOSTNAMES_FILE, "w+") as f:
+    f.write(json.dumps(hostnames))
+
+  print(hostname)
+  with open(HOSTNAME_FILE, "w+") as f:
+    f.write(hostname)
