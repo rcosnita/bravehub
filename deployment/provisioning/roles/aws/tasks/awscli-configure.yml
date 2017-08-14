@@ -1,7 +1,15 @@
 ---
+- name: Obtain AWS_AZ.
+  shell: curl http://169.254.169.254/latest/meta-data/placement/availability-zone
+  register: AWS_AZ
+
 - name: Obtain AWS_REGION.
-  shell: curl http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/.$//'
+  shell: echo "{{AWS_AZ.stdout}}" | sed 's/.$//'
   register: AWS_REGION
+
+- set_fact:
+    AWS_REGION_STR: "{{AWS_REGION.stdout}}"
+    AWS_AZ: "{{AWS_AZ.stdout}}"
 
 - name: Obtain API_ZONE_NAME.
   shell: . {{home_folder}}/instance-descriptor.sh && aws route53 get-hosted-zone --id ${API_ZONE_ID} | jq .HostedZone.Name | sed 's/\"//' | sed 's/\"//' | sed 's/.$//'

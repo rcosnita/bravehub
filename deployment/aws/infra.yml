@@ -117,6 +117,178 @@ Resources:
           Value: !Ref BravehubEnv
         - Key: "bravehub:layer"
           Value: "vpc-storage"
+  RegionalVpcFileSystemStorage:
+    Type: "AWS::EFS::FileSystem"
+    Properties:
+      FileSystemTags:
+        - Key: Name
+          Value: vpc-shared-storage
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "vpc-shared-storage"
+      PerformanceMode: maxIO
+  RegionalVpcFileSystemStorageTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref RegionalVpc
+      Tags:
+        - Key: Name
+          Value: vpc-shared-storage-table
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "vpc-shared-storage"
+  RegionalVpcFileSystemStorageTableInternetAccess:
+    Type: "AWS::EC2::Route"
+    DependsOn: RegionalVpcIgwAttachment
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref RegionalVpcFileSystemStorageTable
+      NatGatewayId: !Ref RegionalVpcNat
+  RegionalVpcFileSystemStorageSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 0, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".31.0/24" ] ]
+      MapPublicIpOnLaunch: "false"
+      VpcId: !Ref RegionalVpc
+      Tags:
+        - Key: Name
+          Value: subnet-vpc-shared-storage-1
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "vpc-shared-storage"
+  RegionalVpcFileSystemStorageSubnet1Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RegionalVpcFileSystemStorageTable
+      SubnetId: !Ref RegionalVpcFileSystemStorageSubnet1
+  RegionalVpcFileSystemStorageSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select [ 1, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".32.0/24" ] ]
+      MapPublicIpOnLaunch: "false"
+      VpcId: !Ref RegionalVpc
+      Tags:
+        - Key: Name
+          Value: subnet-vpc-shared-storage-2
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "vpc-shared-storage"
+  RegionalVpcFileSystemStorageSubnet2Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RegionalVpcFileSystemStorageTable
+      SubnetId: !Ref RegionalVpcFileSystemStorageSubnet2
+  FileSystemStorageSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: shared-storage-sg
+      GroupDescription: Security group for controlling inbound / outbound rules for the shared storage.
+      VpcId: !Ref RegionalVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 111
+          ToPort: 111
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 111
+          ToPort: 111
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 111
+          ToPort: 111
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: udp
+          FromPort: 111
+          ToPort: 111
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 111
+          ToPort: 111
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 111
+          ToPort: 111
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: udp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: shared-storage-sg
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "vpc-shared-storage"
+  FileSystemStorageMountTarget1:
+    Type: "AWS::EFS::MountTarget"
+    Properties:
+      FileSystemId: !Ref RegionalVpcFileSystemStorage
+      SecurityGroups:
+        - !Ref FileSystemStorageSecurityGroup
+      SubnetId: !Ref RegionalVpcFileSystemStorageSubnet1
+  FileSystemStorageMountTarget2:
+    Type: "AWS::EFS::MountTarget"
+    Properties:
+      FileSystemId: !Ref RegionalVpcFileSystemStorage
+      SecurityGroups:
+        - !Ref FileSystemStorageSecurityGroup
+      SubnetId: !Ref RegionalVpcFileSystemStorageSubnet2
   RegionalVpcRouterTable:
     Type: "AWS::EC2::RouteTable"
     Properties:
@@ -244,6 +416,14 @@ Resources:
           FromPort: 123
           ToPort: 123
           CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 111
+          ToPort: 111
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
           Value: router-sg
@@ -313,6 +493,15 @@ Resources:
                   - "route53:GetHostedZone"
                   - "route53:ChangeResourceRecordSets"
                 Resource: !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcInternalApiDns ] ]
+        - PolicyName: "cloudformation-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "cloudformation:DescribeStacks"
+                Resource: "*"
   RouterAutoScalingIamProfile:                
     Type: "AWS::IAM::InstanceProfile"
     Properties: 
@@ -543,6 +732,14 @@ Resources:
         - IpProtocol: udp
           FromPort: 123
           ToPort: 123
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 111
+          ToPort: 111
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 2049
+          ToPort: 2049
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
@@ -895,3 +1092,6 @@ Resources:
               StringEquals:
                 aws:sourceVpc:
                   - !Ref RegionalVpc
+Outputs:
+  SharedStorageDns:
+    Value: !Join ["", [ !Ref RegionalVpcFileSystemStorage, ".efs.", !Ref "AWS::Region", ".amazonaws.com" ]]

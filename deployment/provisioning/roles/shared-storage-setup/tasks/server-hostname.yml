@@ -1,0 +1,31 @@
+---
+- name: Copy server hostname getter script.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: server-hostname.py.j2
+    dest: "{{home_folder}}/server-hostname.py"
+    mode: 0760
+
+- name: "Lock {{SERVER_HOSTNAME_LOCK_FILE}}"
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: /usr/bin/lockfile-create --use-pid --retry 1000 --lock-name "{{SERVER_HOSTNAME_LOCK_FILE}}"
+
+- name: Determine the server hostname.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: "{{home_folder}}/server-hostname.py {{SERVER_MAX_INSTANCES}} {{SERVER_INVENTORY_FILE}} {{SERVER_HOSTNAME_FILE}} {{SERVER_NAME_PATTERN}}"
+  register: SERVER_HOSTNAME
+
+- name: "Unlock {{SERVER_HOSTNAME_LOCK_FILE}}"
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: lockfile-remove --lock-name "{{SERVER_HOSTNAME_LOCK_FILE}}"
+
+- set_fact:
+    SERVER_HOSTNAME: "{{SERVER_HOSTNAME.stdout}}"

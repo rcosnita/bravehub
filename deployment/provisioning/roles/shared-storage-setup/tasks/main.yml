@@ -1,0 +1,100 @@
+---
+- name: Setup awscli.
+  include_role:
+    name: aws
+    tasks_from: awscli-configure
+  tags:
+    - shared-storage
+
+- name: Obtain the shared storage dns name.
+  shell: export AWS_DEFAULT_REGION={{AWS_REGION_STR}} && . {{home_folder}}/instance-descriptor.sh && aws cloudformation describe-stacks --stack-name ${STACK_NAME} | jq '.Stacks[0].Outputs[] | select(.OutputKey == "SharedStorageDns")' | jq .OutputValue
+  register: EFS_DNS_NAME
+  tags:
+    - shared-storage
+
+- set_fact:
+    EFS_DNS_NAME: "{{AWS_AZ}}.{{EFS_DNS_NAME.stdout|replace('\"', '')}}"
+
+- set_fact:
+    EFS_MOUNT_POINT_ENTRY: "{{EFS_DNS_NAME}}:/ {{shared_storage}} nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev 0 0"
+
+- name: Install nfs-common.
+  become: yes
+  become_user: root
+  become_method: sudo
+  apt:
+    name: nfs-common
+    state: present
+  tags:
+    - shared-storage
+
+- name: Install lockfile-progs.
+  become: yes
+  become_user: root
+  become_method: sudo
+  apt:
+    name: lockfile-progs
+    state: present
+  tags:
+    - shared-storage
+
+- name: Remove previously defined efs mount point.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: sed -i.bak "s@{{EFS_DNS_NAME}}:/.*@@g" /etc/fstab
+  tags:
+    - shared-storage
+
+- name: Create efs mount point folder.
+  become: yes
+  become_user: root
+  become_method: sudo
+  file:
+    path: "{{shared_storage}}"
+    state: directory
+    owner: root
+    group: root
+    mode: 777
+  tags:
+    - shared-storage
+
+- name: Disable idmapd service.
+  become: yes
+  become_user: root
+  become_method: sudo
+  systemd:
+    name: idmapd
+    state: stopped
+    enabled: false
+    daemon_reload: yes
+  tags:
+    - shared-storage
+
+- name: Add efs mount point to fstab.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: echo "{{EFS_MOUNT_POINT_ENTRY}}" >> /etc/fstab
+  tags:
+    - shared-storage
+
+- name: Mount all volumes.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: mount -a
+  tags:
+    - shared-storage
+
+- name: Create the provisioning storage.
+  become: yes
+  become_user: root
+  become_method: sudo
+  file:
+    path: "{{provisioning_storage}}"
+    state: directory
+    owner: root
+    group: root
+  tags:
+    - shared-storage
