@@ -423,6 +423,53 @@ Resources:
     Properties:
       RouteTableId: !Ref RegionalVpcRouterTable
       SubnetId: !Ref RegionalVpcRouterSubnet2
+  NtpSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: ntp-sg
+      GroupDescription: Security group for controlling inbound / outbound rules for the ntp server.
+      VpcId: !Ref RegionalVpc
+      SecurityGroupIngress:
+        - IpProtocol: udp
+          FromPort: 123
+          ToPort: 123
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 123
+          ToPort: 123
+          SourceSecurityGroupId: !Ref ZookeeperSecurityGroup
+        - IpProtocol: udp
+          FromPort: 123
+          ToPort: 123
+          SourceSecurityGroupId: !Ref ZookeeperSecurityGroup
+        - IpProtocol: udp
+          FromPort: 123
+          ToPort: 123
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 123
+          ToPort: 123
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: udp
+          FromPort: 123
+          ToPort: 123
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 123
+          ToPort: 123
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ntp-sg
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "ntp"
   RouterSecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
@@ -448,10 +495,6 @@ Resources:
           ToPort: 65535
           CidrIp: 0.0.0.0/0
         - IpProtocol: udp
-          FromPort: 123
-          ToPort: 123
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: udp
           FromPort: 111
           ToPort: 111
           CidrIp: 0.0.0.0/0
@@ -470,38 +513,6 @@ Resources:
           Value: !Ref BravehubEnv
         - Key: "bravehub:layer"
           Value: "routing-api-gateway"
-  RouterSecurityGroupSelfNtpIngress:
-    Type: "AWS::EC2::SecurityGroupIngress"
-    Properties:
-        IpProtocol: udp
-        FromPort: 123
-        ToPort: 123
-        GroupId: !Ref RouterSecurityGroup
-        SourceSecurityGroupId: !Ref RouterSecurityGroup
-  RouterSecurityGroupZookeeperNtpIngress:
-    Type: "AWS::EC2::SecurityGroupIngress"
-    Properties:
-        IpProtocol: udp
-        FromPort: 123
-        ToPort: 123
-        GroupId: !Ref RouterSecurityGroup
-        SourceSecurityGroupId: !Ref ZookeeperSecurityGroup
-  RouterSecurityGroupSwarmMasterNtpIngress:
-    Type: "AWS::EC2::SecurityGroupIngress"
-    Properties:
-        IpProtocol: udp
-        FromPort: 123
-        ToPort: 123
-        GroupId: !Ref RouterSecurityGroup
-        SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
-  RouterSecurityGroupSwarmWorkerNtpIngress:
-    Type: "AWS::EC2::SecurityGroupIngress"
-    Properties:
-        IpProtocol: udp
-        FromPort: 123
-        ToPort: 123
-        GroupId: !Ref RouterSecurityGroup
-        SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
   RouterAutoScalingIamRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -564,6 +575,7 @@ Resources:
       IamInstanceProfile: !Ref RouterAutoScalingIamProfile
       KeyName: !Ref StackName
       SecurityGroups:
+        - !Ref NtpSecurityGroup
         - !Ref RouterSecurityGroup
         - !Ref ZookeeperSecurityGroup
       UserData:
@@ -631,6 +643,7 @@ Resources:
       IamInstanceProfile: !Ref RouterAutoScalingIamProfile
       KeyName: !Ref StackName
       SecurityGroups:
+        - !Ref NtpSecurityGroup
         - !Ref RouterSecurityGroup
         - !Ref ZookeeperSecurityGroup
       SpotPrice: !Ref RouterInstanceSpotPrice
@@ -806,6 +819,7 @@ Resources:
       InstanceType: !Ref SwarmMasterInstanceType
       KeyName: !Ref StackName
       SecurityGroups:
+        - !Ref NtpSecurityGroup
         - !Ref SwarmMasterSecurityGroup
       UserData: ""
   SwarmMasterAutoScaling:
@@ -849,6 +863,7 @@ Resources:
       InstanceType: !Ref SwarmMasterInstanceType
       KeyName: !Ref StackName
       SecurityGroups:
+        - !Ref NtpSecurityGroup
         - !Ref SwarmMasterSecurityGroup
       SpotPrice: !Ref SwarmMasterSpotPrice
       UserData: ""
@@ -1020,6 +1035,7 @@ Resources:
       InstanceType: !Ref SwarmWorkerInstanceType
       KeyName: !Ref StackName
       SecurityGroups:
+        - !Ref NtpSecurityGroup
         - !Ref SwarmWorkerSecurityGroup
       UserData: ""
   SwarmWorkerAutoScaling:
@@ -1063,6 +1079,7 @@ Resources:
       InstanceType: !Ref SwarmWorkerInstanceType
       KeyName: !Ref StackName
       SecurityGroups:
+        - !Ref NtpSecurityGroup
         - !Ref SwarmWorkerSecurityGroup
       SpotPrice: !Ref SwarmWorkerSpotPrice
       UserData: ""
