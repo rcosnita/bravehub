@@ -1,0 +1,13 @@
+[Unit]
+Description=Bravehub hbase {{HBASE_ROLE}} management script.
+Requires=network.target
+
+[Service]
+User=hbase
+Group=docker
+Type=oneshot
+EnvironmentFile=-{{home_folder}}/instance-descriptor.sh
+ExecStart={{hbase_home}}/start-hbase.sh {{HBASE_ROLE}}
+ExecStop={{hbase_home}}/stop-hbase.sh {{HBASE_ROLE}}
+WorkingDirectory={{hbase_home}}
+RemainAfterExit=true

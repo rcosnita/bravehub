@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+HBASE_ROLE=$1
+PID_FILE="{{hbase_home}}/${HBASE_ROLE}".pid
+CONTAINER_ID=$(cat ${PID_FILE})
+docker rm -f ${CONTAINER_ID}

@@ -106,6 +106,6 @@
   become: yes
   become_user: root
   become_method: sudo
-  shell: find {{home_folder}}/provisioning/images -name *.tar | xargs docker load -i
+  shell: find {{home_folder}}/provisioning/images -name *.tar | xargs -i docker load -i {}
   tags:
     - docker-engine

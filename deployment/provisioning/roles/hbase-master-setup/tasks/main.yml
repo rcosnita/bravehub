@@ -1,0 +1,9 @@
+---
+- name: Hbase common setup.
+  include_role:
+    name: hbase
+    tasks_from: hbase-common
+  vars:
+    HBASE_ROLE: master
+  tags:
+    - hbase-master-setup
