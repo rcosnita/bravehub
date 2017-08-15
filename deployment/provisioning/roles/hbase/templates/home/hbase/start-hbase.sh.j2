@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+HBASE_ROLE=$1
+HBASE_SITE_CONFIG=$(cat {{hbase_home}}/hbase-site-${HBASE_ROLE}.xml | base64)
+HBASE_RS_CONFIG=$(cat {{hbase_home}}/regionservers | base64)
+PID_FILE="{{hbase_home}}/${HBASE_ROLE}".pid
+HBASE_CMD_OPTS=""
+HBASE_CMD="./bin/hbase-daemon.sh --config conf foreground_start ${HBASE_ROLE} ${HBASE_CMD_OPTS}"
+DOCKER_OPTS=()
+
+if [[ HBASE_ROLE -eq "master" ]]; then
+    DOCKER_OPTS=(
+        -p 0.0.0.0:16000:16000/tcp
+        -p 0.0.0.0:16010:16010/tcp
+    )
+fi
+
+CONTAINER_ID=$(docker run -it -d --env HBASE_SITE_CONFIG="${HBASE_SITE_CONFIG}" \
+    --env HBASE_RS_CONFIG="${HBASE_RS_CONFIG}" \
+    --env HBASE_CMD="${HBASE_CMD}" \
+    -v {{shared_storage}}/hbase:{{shared_storage}}/hbase:rw \
+    ${DOCKER_OPTS[*]} \
+    bravehub/hbase:{{hbase_version}})
+
+echo "${CONTAINER_ID}" > ${PID_FILE}

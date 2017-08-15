@@ -1,0 +1,20 @@
+<configuration>
+  <property>
+    <name>hbase.rootdir</name>
+    <value>{{shared_storage}}/hbase</value>
+  </property>
+  <property>
+    <name>hbase.zookeeper.quorum</name>
+    <value>zookeeper.{{API_ZONE_NAME_STR}}</value>
+  </property>
+  <property>
+    <name>hbase.cluster.distributed</name>
+    <value>true</value>
+  </property>
+  {% if HBASE_ROLE == "regionserver" %}
+  <property>
+    <name>hbase.regionserver.hostname</name>
+    <value>{{hbase_regionserver_hostname}}</value>
+  </property>
+  {% endif %}
+</configuration>

@@ -1,0 +1,117 @@
+---
+- name: Setup awscli.
+  include_role:
+    name: aws
+    tasks_from: awscli-configure
+
+- name: Create the hbase user.
+  become: yes
+  become_user: root
+  become_method: sudo
+  user:
+    name: hbase
+    uid: "{{hbase_uid}}"
+    comment: "Hbase user."
+    state: present
+    group: docker
+    home: "{{hbase_home}}"
+
+- name: Copy the start script.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: home/hbase/start-hbase.sh.j2
+    dest: "{{hbase_home}}/start-hbase.sh"
+    owner: hbase
+    mode: 0760
+
+- name: Copy the stop script.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: home/hbase/stop-hbase.sh.j2
+    dest: "{{hbase_home}}/stop-hbase.sh"
+    owner: hbase
+    mode: 0760
+
+- name: Copy hbase site configuration file.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: home/hbase/hbase-site.xml.j2
+    dest: "{{hbase_home}}/hbase-site-master.xml"
+    owner: hbase
+    mode: 0760
+  when: HBASE_ROLE == "master"
+
+- name: Copy hbase regionservers configuration file.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: home/hbase/regionservers.j2
+    dest: "{{hbase_home}}/regionservers"
+    owner: hbase
+    mode: 0760
+
+- name: Determine the hbase master hostname.
+  include_role:
+    name: shared-storage-setup
+    tasks_from: server-hostname
+  vars:
+    SERVER_HOSTNAME_LOCK_FILE: "{{provisioning_storage}}/hbase-master.lock"
+    SERVER_HOSTNAME_FILE: "{{hbase_home}}/hbase-master-hostname"
+    SERVER_MAX_INSTANCES: "{{hbase_max_masters}}"
+    SERVER_INVENTORY_FILE: "{{provisioning_storage}}/hbase-masters.json"
+    SERVER_NAME_PATTERN: "{{hbase_master_pattern}}.{{API_ZONE_NAME_STR}}"
+  when: HBASE_ROLE == "master"
+
+- set_fact:
+    HBASE_MASTER_HOSTNAME: "{{SERVER_HOSTNAME}}"
+
+- name: Create the hbase data storage.
+  become: yes
+  become_user: root
+  become_method: sudo
+  file:
+    path: "{{shared_storage}}/hbase"
+    state: directory
+    group: root
+    owner: hbase
+    mode: "u+rw,g+r,o-r"
+  when: HBASE_ROLE == "master" and HBASE_MASTER_HOSTNAME
+
+- name: Copy hbase master systemd script.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: etc/systemd/system/hbase.service.j2
+    dest: /etc/systemd/system/hbase-master.service
+  when: HBASE_ROLE == "master" and HBASE_MASTER_HOSTNAME
+
+- pause:
+    seconds: 60 # give zookeeper dns record enough time to propagate.
+  when: HBASE_ROLE == "master" and HBASE_MASTER_HOSTNAME
+
+- name: Activate hbase master service.
+  become: yes
+  become_user: root
+  become_method: sudo
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: hbase-master
+    state: restarted
+  when: HBASE_ROLE == "master" and HBASE_MASTER_HOSTNAME
+
+- name: Store hbase master dns entry.
+  include_role:
+    name: aws
+    tasks_from: aws-setrecord.yml
+  vars:
+    DOMAIN_NAME: "{{HBASE_MASTER_HOSTNAME}}"
+  when: HBASE_ROLE == "master" and HBASE_MASTER_HOSTNAME

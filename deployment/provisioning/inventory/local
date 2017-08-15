@@ -11,3 +11,9 @@ local:
       zookeeper_version: 0.1.0
       zookeeper_max_instances: 1
       zookeeper_pattern: zookeeper
+      hbase_uid: 2010
+      hbase_home: /home/hbase
+      hbase_version: 0.1.0
+      hbase_max_masters: 2
+      hbase_master_pattern: "hbase-master-{0}"
+      hbase_max_regionservers: 100
