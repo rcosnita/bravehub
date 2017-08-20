@@ -47,6 +47,41 @@
     mode: 0760
   when: HBASE_ROLE == "master"
 
+- name: Determine the hbase regionserver hostname.
+  include_role:
+    name: shared-storage-setup
+    tasks_from: server-hostname
+  vars:
+    SERVER_HOSTNAME_LOCK_FILE: "{{provisioning_storage}}/hbase-regionserver.lock"
+    SERVER_HOSTNAME_FILE: "{{hbase_home}}/hbase-regionserver-hostname"
+    SERVER_MAX_INSTANCES: "{{hbase_max_regionservers}}"
+    SERVER_INVENTORY_FILE: "{{provisioning_storage}}/hbase-regionservers.json"
+    SERVER_NAME_PATTERN: "{{hbase_regionserver_pattern}}.{{API_ZONE_NAME_STR}}"
+  when: HBASE_ROLE == "regionserver"
+
+- set_fact:
+    hbase_regionserver_hostname: "{{SERVER_HOSTNAME}}"
+  when: HBASE_ROLE == "regionserver"
+
+- name: Store hbase regionserver dns entry.
+  include_role:
+    name: aws
+    tasks_from: aws-setrecord.yml
+  vars:
+    DOMAIN_NAME: "{{hbase_regionserver_hostname}}"
+  when: HBASE_ROLE == "regionserver" and hbase_regionserver_hostname
+
+- name: Copy hbase site regionserver configuration file.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: home/hbase/hbase-site.xml.j2
+    dest: "{{hbase_home}}/hbase-site-regionserver.xml"
+    owner: hbase
+    mode: 0760
+  when: HBASE_ROLE == "regionserver"
+
 - name: Copy hbase regionservers configuration file.
   become: yes
   become_user: root
@@ -71,6 +106,15 @@
 
 - set_fact:
     HBASE_MASTER_HOSTNAME: "{{SERVER_HOSTNAME}}"
+  when: HBASE_ROLE == "master"
+
+- name: Store hbase master dns entry.
+  include_role:
+    name: aws
+    tasks_from: aws-setrecord.yml
+  vars:
+    DOMAIN_NAME: "{{HBASE_MASTER_HOSTNAME}}"
+  when: HBASE_ROLE == "master" and HBASE_MASTER_HOSTNAME
 
 - name: Create the hbase data storage.
   become: yes
@@ -93,9 +137,22 @@
     dest: /etc/systemd/system/hbase-master.service
   when: HBASE_ROLE == "master" and HBASE_MASTER_HOSTNAME
 
+- name: Copy hbase regionserver systemd script.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: etc/systemd/system/hbase.service.j2
+    dest: /etc/systemd/system/hbase-regionserver.service
+  when: HBASE_ROLE == "regionserver" and hbase_regionserver_hostname
+
 - pause:
-    seconds: 60 # give zookeeper dns record enough time to propagate.
+    seconds: "{{wait_for_zookeepeer_seconds}}" # give zookeeper dns record enough time to propagate.
   when: HBASE_ROLE == "master" and HBASE_MASTER_HOSTNAME
+
+- pause:
+    seconds: "{{wait_for_zookeepeer_seconds}}" # give zookeeper dns record enough time to propagate.
+  when: HBASE_ROLE == "regionserver" and hbase_regionserver_hostname
 
 - name: Activate hbase master service.
   become: yes
@@ -108,10 +165,13 @@
     state: restarted
   when: HBASE_ROLE == "master" and HBASE_MASTER_HOSTNAME
 
-- name: Store hbase master dns entry.
-  include_role:
-    name: aws
-    tasks_from: aws-setrecord.yml
-  vars:
-    DOMAIN_NAME: "{{HBASE_MASTER_HOSTNAME}}"
-  when: HBASE_ROLE == "master" and HBASE_MASTER_HOSTNAME
+- name: Activate hbase regionserver service.
+  become: yes
+  become_user: root
+  become_method: sudo
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: hbase-regionserver
+    state: restarted
+  when: HBASE_ROLE == "regionserver" and hbase_regionserver_hostname

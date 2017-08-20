@@ -8,3 +8,4 @@
     - shared-storage-setup
     - zookeeper-setup
     - hbase-master-setup
+    - hbase-regionserver-setup
