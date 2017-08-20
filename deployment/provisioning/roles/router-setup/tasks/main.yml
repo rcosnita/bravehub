@@ -25,23 +25,12 @@
     - router-setup
     - router-dns-setup
 
-- name: Obtain all routers ips.
-  shell: export AWS_DEFAULT_REGION={{AWS_REGION.stdout}} && . {{home_folder}}/instance-descriptor.sh && aws ec2 describe-instances --filters "Name=tag:bravehub:layer,Values=routing-api-gateway" --filters "Name=tag:bravehub:stack,Values=${STACK_NAME}" --filters "Name=instance-state-name,Values=running" | jq -r '.Reservations[].Instances[].NetworkInterfaces[0].PrivateIpAddress'
-  register: ROUTER_IPS
+- name: Balance thrift servers.
+  include_role:
+    name: aws
+    tasks_from: aws-dnsbalance
+  vars:
+    BALANCED_ROLE: "{{router_balanced_name}}"
+    SERVER_TAGGED_ROLE: "{{router_instance_role}}"
   tags:
     - router-setup
-    - router-dns-setup
-
-- name: Configure record set json input.
-  template:
-    src: "router-dns.json.j2"
-    dest: "{{home_folder}}/router-dns.json"
-  tags:
-    - router-setup
-    - router-dns-setup
-
-- name: Upsert the internal router dns record set.
-  shell: . {{home_folder}}/instance-descriptor.sh && aws route53 change-resource-record-sets --hosted-zone-id ${API_ZONE_ID} --change-batch file://{{home_folder}}/router-dns.json
-  tags:
-    - router-setup
-    - router-dns-setup

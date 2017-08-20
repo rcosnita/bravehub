@@ -20,6 +20,10 @@ local:
       hbase_max_regionservers: 100
       hbase_regionserver_pattern: "hbase-regionserver-{0}"
       hbase_max_thrift: 2
+      hbase_thrift_instance_role: "routing-api-gateway"
+      hbase_thrift_balanced_name: "hbase-thrift" 
       hbase_thrift_pattern: "hbase-thrift-{0}"
       hbase_thrift_port: 9090
       hbase_thrift_infoport: 9100
+      router_balanced_name: "router"
+      router_instance_role: "routing-api-gateway"
