@@ -8,17 +8,26 @@ PID_FILE="{{hbase_home}}/${HBASE_ROLE}".pid
 HBASE_CMD_OPTS=""
 HBASE_CMD="./bin/hbase-daemon.sh --config conf foreground_start ${HBASE_ROLE} ${HBASE_CMD_OPTS}"
 DOCKER_OPTS=()
+DOCKER_HOSTNAME=$(cat {{hbase_home}}/hbase-${HBASE_ROLE}-hostname)
 
-if [[ HBASE_ROLE -eq "master" ]]; then
+if [[ ${HBASE_ROLE} == "master" ]]; then
     DOCKER_OPTS=(
         -p 0.0.0.0:16000:16000/tcp
         -p 0.0.0.0:16010:16010/tcp
     )
 fi
 
+if [[ ${HBASE_ROLE} == "regionserver" ]]; then
+    DOCKER_OPTS=(
+        -p 0.0.0.0:16020:16020/tcp
+        -p 0.0.0.0:16030:16030/tcp
+    )
+fi
+
 CONTAINER_ID=$(docker run -it -d --env HBASE_SITE_CONFIG="${HBASE_SITE_CONFIG}" \
     --env HBASE_RS_CONFIG="${HBASE_RS_CONFIG}" \
     --env HBASE_CMD="${HBASE_CMD}" \
+    -h ${DOCKER_HOSTNAME} \
     -v {{shared_storage}}/hbase:{{shared_storage}}/hbase:rw \
     ${DOCKER_OPTS[*]} \
     bravehub/hbase:{{hbase_version}})
