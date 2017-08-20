@@ -1,0 +1,22 @@
+{
+  "Comment": "Update the thrift settings",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "thrift.{{API_ZONE_NAME.stdout}}",
+        "Type": "A",
+        "SetIdentifier": "thrift.{{API_ZONE_NAME.stdout}}",
+        "TTL": {{dns_ttl}},
+        "Region": "{{AWS_REGION.stdout}}",
+        "ResourceRecords": [
+          {% for thrift_ip in THRIFT_IPS.stdout_lines %}
+          {
+            "Value": "{{thrift_ip}}"
+          }{% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]
+      }
+    }
+  ]
+}
