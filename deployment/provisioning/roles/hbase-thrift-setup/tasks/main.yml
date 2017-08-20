@@ -1,0 +1,32 @@
+---
+- name: Hbase common setup.
+  include_role:
+    name: hbase
+    tasks_from: hbase-common
+  vars:
+    HBASE_ROLE: thrift
+  tags:
+    - hbase-thrift-setup
+
+- name: Setup awscli.
+  include_role:
+    name: aws
+    tasks_from: awscli-configure
+
+- name: Obtain all thrift server ips.
+  shell: export AWS_DEFAULT_REGION={{AWS_REGION.stdout}} && . {{home_folder}}/instance-descriptor.sh && aws ec2 describe-instances --filters "Name=tag:bravehub:layer,Values=routing-api-gateway" --filters "Name=tag:bravehub:stack,Values=${STACK_NAME}" --filters "Name=instance-state-name,Values=running" | jq -r '.Reservations[].Instances[].NetworkInterfaces[0].PrivateIpAddress'
+  register: THRIFT_IPS
+  tags:
+    - hbase-thrift-setup
+
+- name: Configure record set json input.
+  template:
+    src: "thrift-dns.json.j2"
+    dest: "{{home_folder}}/thrift-dns.json"
+  tags:
+    - hbase-thrift-setup
+
+- name: Upsert the internal thrift dns record set.
+  shell: . {{home_folder}}/instance-descriptor.sh && aws route53 change-resource-record-sets --hosted-zone-id ${API_ZONE_ID} --change-batch file://{{home_folder}}/thrift-dns.json
+  tags:
+    - hbase-thrift-setup

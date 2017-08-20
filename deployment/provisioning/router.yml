@@ -9,3 +9,4 @@
     - zookeeper-setup
     - hbase-master-setup
     - hbase-regionserver-setup
+    - hbase-thrift-setup

@@ -6,7 +6,6 @@ HBASE_SITE_CONFIG=$(cat {{hbase_home}}/hbase-site-${HBASE_ROLE}.xml | base64)
 HBASE_RS_CONFIG=$(cat {{hbase_home}}/regionservers | base64)
 PID_FILE="{{hbase_home}}/${HBASE_ROLE}".pid
 HBASE_CMD_OPTS=""
-HBASE_CMD="./bin/hbase-daemon.sh --config conf foreground_start ${HBASE_ROLE} ${HBASE_CMD_OPTS}"
 DOCKER_OPTS=()
 DOCKER_HOSTNAME=$(cat {{hbase_home}}/hbase-${HBASE_ROLE}-hostname)
 
@@ -24,6 +23,16 @@ if [[ ${HBASE_ROLE} == "regionserver" ]]; then
     )
 fi
 
+if [[ ${HBASE_ROLE} == "thrift" ]]; then
+    DOCKER_OPTS=(
+        -p 0.0.0.0:{{hbase_thrift_port}}:{{hbase_thrift_port}}/tcp
+        -p 0.0.0.0:{{hbase_thrift_infoport}}:{{hbase_thrift_infoport}}/tcp
+    )
+
+    HBASE_CMD_OPTS="--port {{hbase_thrift_port}} --infoport {{hbase_thrift_infoport}}"
+fi
+
+HBASE_CMD="./bin/hbase-daemon.sh --config conf foreground_start ${HBASE_ROLE} ${HBASE_CMD_OPTS}"
 CONTAINER_ID=$(docker run -it -d --env HBASE_SITE_CONFIG="${HBASE_SITE_CONFIG}" \
     --env HBASE_RS_CONFIG="${HBASE_RS_CONFIG}" \
     --env HBASE_CMD="${HBASE_CMD}" \

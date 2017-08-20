@@ -42,10 +42,10 @@
   become_method: sudo
   template:
     src: home/hbase/hbase-site.xml.j2
-    dest: "{{hbase_home}}/hbase-site-master.xml"
+    dest: "{{hbase_home}}/hbase-site-{{HBASE_ROLE}}.xml"
     owner: hbase
     mode: 0760
-  when: HBASE_ROLE == "master"
+  when: HBASE_ROLE == "master" or HBASE_ROLE == "thrift"
 
 - name: Determine the hbase regionserver hostname.
   include_role:
@@ -63,6 +63,22 @@
     hbase_regionserver_hostname: "{{SERVER_HOSTNAME}}"
   when: HBASE_ROLE == "regionserver"
 
+- name: Determine the hbase thrift hostname.
+  include_role:
+    name: shared-storage-setup
+    tasks_from: server-hostname
+  vars:
+    SERVER_HOSTNAME_LOCK_FILE: "{{provisioning_storage}}/hbase-thrift.lock"
+    SERVER_HOSTNAME_FILE: "{{hbase_home}}/hbase-thrift-hostname"
+    SERVER_MAX_INSTANCES: "{{hbase_max_thrift}}"
+    SERVER_INVENTORY_FILE: "{{provisioning_storage}}/hbase-thrift.json"
+    SERVER_NAME_PATTERN: "{{hbase_thrift_pattern}}.{{API_ZONE_NAME_STR}}"
+  when: HBASE_ROLE == "thrift"
+
+- set_fact:
+    hbase_thrift_hostname: "{{SERVER_HOSTNAME}}"
+  when: HBASE_ROLE == "thrift"
+
 - name: Store hbase regionserver dns entry.
   include_role:
     name: aws
@@ -70,6 +86,14 @@
   vars:
     DOMAIN_NAME: "{{hbase_regionserver_hostname}}"
   when: HBASE_ROLE == "regionserver" and hbase_regionserver_hostname
+
+- name: Store hbase thrift dns entry.
+  include_role:
+    name: aws
+    tasks_from: aws-setrecord.yml
+  vars:
+    DOMAIN_NAME: "{{hbase_thrift_hostname}}"
+  when: HBASE_ROLE == "thrift" and hbase_thrift_hostname
 
 - name: Copy hbase site regionserver configuration file.
   become: yes
@@ -146,6 +170,15 @@
     dest: /etc/systemd/system/hbase-regionserver.service
   when: HBASE_ROLE == "regionserver" and hbase_regionserver_hostname
 
+- name: Copy hbase thrift systemd script.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: etc/systemd/system/hbase.service.j2
+    dest: /etc/systemd/system/hbase-thrift.service
+  when: HBASE_ROLE == "thrift" and hbase_thrift_hostname
+
 - pause:
     seconds: "{{wait_for_zookeepeer_seconds}}" # give zookeeper dns record enough time to propagate.
   when: HBASE_ROLE == "master" and HBASE_MASTER_HOSTNAME
@@ -153,6 +186,10 @@
 - pause:
     seconds: "{{wait_for_zookeepeer_seconds}}" # give zookeeper dns record enough time to propagate.
   when: HBASE_ROLE == "regionserver" and hbase_regionserver_hostname
+
+- pause:
+    seconds: "{{wait_for_zookeepeer_seconds}}" # give zookeeper dns record enough time to propagate.
+  when: HBASE_ROLE == "thrift" and hbase_thrift_hostname
 
 - name: Activate hbase master service.
   become: yes
@@ -175,3 +212,14 @@
     name: hbase-regionserver
     state: restarted
   when: HBASE_ROLE == "regionserver" and hbase_regionserver_hostname
+
+- name: Activate hbase thrift service.
+  become: yes
+  become_user: root
+  become_method: sudo
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: hbase-thrift
+    state: restarted
+  when: HBASE_ROLE == "thrift" and hbase_thrift_hostname

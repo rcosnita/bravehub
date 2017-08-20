@@ -340,12 +340,24 @@ Resources:
           ToPort: 9090
           SourceSecurityGroupId: !Ref RouterSecurityGroup
         - IpProtocol: tcp
+          FromPort: 9100
+          ToPort: 9100
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
           FromPort: 9090
           ToPort: 9090
           SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
         - IpProtocol: tcp
+          FromPort: 9100
+          ToPort: 9100
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
           FromPort: 9090
           ToPort: 9090
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 9100
+          ToPort: 9100
           SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
         - IpProtocol: tcp
           FromPort: 16000
@@ -555,7 +567,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 84.117.250.171/32
+          CidrIp: 213.233.85.197/32
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 0
@@ -1195,6 +1207,8 @@ Resources:
             Action:
               - "s3:GetObject"
               - "s3:HeadObject"
+              - "s3:PutObject"
+              - "s3:CreateMultipartUpload"
               - "s3:ListBucket"
               - "s3:ListObjects"
             Resource:
