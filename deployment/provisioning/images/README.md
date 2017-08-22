@@ -7,3 +7,5 @@ docker save <imageid>:<image-version> -o <image-name>-<image-version>.tar
 
 All images from here are imported automatically on every instance from the platform. This allows us to make deployments without actually using
 a docker repository.
+
+You can also use the **../provisioning/build-images.sh** script which populates this folder with all required images from production.

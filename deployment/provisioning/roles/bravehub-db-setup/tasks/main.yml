@@ -1,0 +1,32 @@
+---
+- name: Setup awscli.
+  include_role:
+    name: aws
+    tasks_from: awscli-configure
+  tags:
+    - bravehub-db-setup
+
+- name: Obtain the hbase site configuration.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: base64 "{{hbase_home}}/hbase-site-master.xml"
+  register: HBASE_SITE_CONFIG
+  tags:
+    - bravehub-db-setup
+
+- set_fact:
+    HBASE_SITE_CONFIG: "{{HBASE_SITE_CONFIG.stdout}}"
+
+- name: Run the setup db docker image.
+  become: yes
+  become_user: root
+  become_method: sudo
+  docker_container:
+    name: bravehub
+    image: "bravehub/setup-database:{{bravehub_version}}"
+    env:
+      HBASE_SITE_CONFIG: "{{HBASE_SITE_CONFIG}}"
+      SCRIPT_NAME: "~/scripts/hbase/00-create-data-model.txt"
+  tags:
+    - bravehub-db-setup
