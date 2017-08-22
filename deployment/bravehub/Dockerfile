@@ -1,6 +1,7 @@
-FROM bravehub_hbase-regionserver-1.api.internal.bravehub-dev.com:latest
+FROM bravehub/hbase:0.1.0
 
 USER root
+ADD scripts /root/scripts
 RUN cd /root && \
     echo "export JAVA_HOME=/usr/lib/jvm/default-jvm" >> "/root/.bashrc"
 
