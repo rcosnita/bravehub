@@ -27,3 +27,4 @@ local:
       hbase_thrift_infoport: 9100
       router_balanced_name: "router"
       router_instance_role: "routing-api-gateway"
+      bravehub_version: 0.1.0
