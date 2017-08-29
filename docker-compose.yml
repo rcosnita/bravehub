@@ -1,7 +1,9 @@
 version: '3'
 services:
   configuration-api.api.internal.bravehub-dev.com:
-    build: configuration-api
+    build:
+      context: .
+      dockerfile: configuration-api/Dockerfile
     entrypoint:
       - flask
       - run
@@ -10,12 +12,16 @@ services:
       BRAVEHUB_SUFFIX: "bravehub-dev.com"
       FLASK_DEBUG: 1
       FLASK_APP: src/app.py
+      PYTHONPATH: .:src
     ports:
       - "0.0.0.0:5000:5000"
     volumes:
       - ./configuration-api:/root/configuration-api:consistent
+      - ./bravehub_shared:/root/configuration-api/src/bravehub_shared:consistent
   logging-api.api.internal.bravehub-dev.com:
-    build: logging-api
+    build:
+      context: .
+      dockerfile: logging-api/Dockerfile
     entrypoint:
       - flask
       - run
@@ -24,12 +30,16 @@ services:
       BRAVEHUB_SUFFIX: "bravehub-dev.com"
       FLASK_DEBUG: 1
       FLASK_APP: src/app.py
+      PYTHONPATH: .:src
     ports:
       - "0.0.0.0:5010:5000"
     volumes:
-      - ./logging-api:/root/logging-api
+      - ./logging-api:/root/logging-api:consistent
+      - ./bravehub_shared:/root/logging-api/src/bravehub_shared:consistent
   provisioning-api.api.internal.bravehub-dev.com:
-    build: provisioning-api
+    build:
+      context: .
+      dockerfile: provisioning-api/Dockerfile
     entrypoint:
       - flask
       - run
@@ -38,10 +48,12 @@ services:
       BRAVEHUB_SUFFIX: "bravehub-dev.com"
       FLASK_DEBUG: 1
       FLASK_APP: src/app.py
+      PYTHONPATH: .:src
     ports:
       - "0.0.0.0:5020:5000"
     volumes:
-      - ./provisioning-api:/root/provisioning-api
+      - ./provisioning-api:/root/provisioning-api:consistent
+      - ./bravehub_shared:/root/provisioning-api/src/bravehub_shared:consistent
   zookeeper-1.api.internal.bravehub-dev.com:
     build: deployment/hadoop/zookeeper
     hostname: zookeeper-1.api.internal.bravehub-dev.com
