@@ -34,3 +34,15 @@ For instance, you might want to lint configuration api project.
 ```bash
 sh cicd/lint-code.sh configuration-api
 ```
+
+### Python unit testing
+
+```bash
+sh cicd/run-unit-tests.sh <project-name>
+```
+
+For instance, you might want to run the unit tests for the configuration api project.
+
+```bash
+sh cicd/run-unit-tests.sh configuration-api
+```
