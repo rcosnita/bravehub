@@ -2,6 +2,8 @@
 Provides the containers and bindings required for the shared layer to work.
 It expects each application to correctly set the config binding with accurate values.
 """
+from urllib import request
+
 from dependency_injector.containers import DeclarativeContainer
 from dependency_injector.providers import Configuration, Singleton
 
@@ -16,10 +18,13 @@ class ApiClientsContainer(DeclarativeContainer): # pylint: disable=too-few-publi
   """Provides all api clients which can be used in bravehub modules and micro services."""
 
   config_api = Singleton(ApiClient, api_name="configuration-api",
-                         cluster_suffix=CoreContainer.config.cluster_suffix)
+                         cluster_suffix=CoreContainer.config.cluster_suffix,
+                         http_client=request, api_port=5000)
 
   logging_api = Singleton(ApiClient, api_name="logging-api",
-                          cluster_suffix=CoreContainer.config.cluster_suffix)
+                          cluster_suffix=CoreContainer.config.cluster_suffix,
+                          http_client=request, api_port=5000)
 
   provisioning_api = Singleton(ApiClient, api_name="provisioning-api",
-                               cluster_suffix=CoreContainer.config.cluster_suffix)
+                               cluster_suffix=CoreContainer.config.cluster_suffix,
+                               http_client=request, api_port=5000)
