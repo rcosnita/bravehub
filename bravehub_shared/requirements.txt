@@ -1,0 +1,1 @@
+dependency_injector==3.6.1
