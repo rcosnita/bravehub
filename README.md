@@ -20,3 +20,17 @@ docker-compose up
 ```
 
 This will start the platform and all APIs will be hot reloaded once you change the code.
+
+## Best practices
+
+### Python linting
+
+```bash
+sh cicd/lint-code.sh <project-name>
+```
+
+For instance, you might want to lint configuration api project.
+
+```bash
+sh cicd/lint-code.sh configuration-api
+```
