@@ -1,3 +1,5 @@
 __pycache__
 deployment/provisioning/images/*.tar
 venv
+dist
+node_modules

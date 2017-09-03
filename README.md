@@ -46,3 +46,11 @@ For instance, you might want to run the unit tests for the configuration api pro
 ```bash
 sh cicd/run-unit-tests.sh configuration-api
 ```
+
+## Generate APIs documentation
+
+```bash
+npm install -d
+sh cicd/generate-api-specs.sh
+open dist/apis
+```
