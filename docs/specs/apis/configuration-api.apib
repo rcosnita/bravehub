@@ -1,0 +1,658 @@
+FORMAT: 1a
+HOST: http://configuration-api.api.internal.bravehub.com
+
+# Configuration
+
+The configuration API is responsible for managing projects and specific configurations.
+The API itself simply accepts various meta data and binary files belonging to a project. In addition,
+it communicates with **Provisioning API** in order to notify it about changes.
+
+# Group Owners
+
+Provides the resources for managing users / owners from the system. This is extremely important for billing and logging purposes.
+
+## Owners Collection [/owners]
+
+### Create a new owner [POST]
+
++ Request New owner (application/json)
+
+    + Body
+
+            {
+                "email": "john.doe@gmail.com",
+                "authenticationProvider": "github",
+                "authorizationProvider": "bravehub"
+            }
+
++ Response 201 (application/json)
+
+    + Headers
+
+            Location: /owners/3746656e-c319-447f-9fc1-2f85f1cbcd33
+
+## Owner [/owners/{ownerId}]
+
+### Get my data [GET]
+
++ Parameters
+    + ownerId (string) - The owner information we want to retrieve. A supported alias is **me** for obtaining the current user information.
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "id": "3746656e-c319-447f-9fc1-2f85f1cbcd33",
+                "email": "john.doe@gmail.com",
+                "authenticationProvider": "github",
+                "authorizationProvider": "bravehub"
+            }
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The owner {ownerId} does not exist."
+            }
+
+### Update my data [PUT]
+
++ Parameters
+    + ownerId (string) - The owner information we want to retrieve. A supported alias is **me** for obtaining the current user information.
+
++ Request Owner (application/json)
+
+    + Body
+
+            {
+                "email": "john.doe@gmail.com",
+                "authenticationProvider": "github",
+                "authorizationProvider": "bravehub"
+            }
+
++ Response 204 (application/json)
+
+# Group Projects
+
+This group is responsible meta information for projects. It is not in the scope of this group to handle project configurations.
+
+## Project Collection [/projects{?query}{?order}]
+
+### List all projects [GET]
+
++ Parameters
+    + query (string,optional) - A query which we want to apply when listing the projects.
+    + order (string,optional) - The ordering criteria for the given query.
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "items": [
+                    {
+                        "id": "5cf47fb5-ab1e-485b-9934-3e8cd062487e",
+                        "name": "Sample project",
+                        "description": "First project ever deployed on Bravehub platform.",
+                        "domain": "myproject.external.bravehub-dev.com",
+                        "owner": {
+                            "id": "3746656e-c319-447f-9fc1-2f85f1cbcd33"
+                        }
+                    }
+                ],
+                "startRecord": "5cf47fb5-ab1e-485b-9934-3e8cd062487e",
+                "endRecord": "5cf47fb5-ab1e-485b-9934-3e8cd062487f",
+                "previous": undefined,
+                "next": "/projects?startRecord=5cf47fb5-ab1e-485b-9934-3e8cd062487f&limit=1",
+                "limit": 1
+            }
+
+## Project [/projects/{projectId}]
+
+### View project details [GET]
+
++ Parameters
+    + projectId (UUID) - The unique identifier of the project.
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "id": "5cf47fb5-ab1e-485b-9934-3e8cd062487e",
+                "name": "Sample project",
+                "description": "First project ever deployed on Bravehub platform.",
+                "domain": "myproject.external.bravehub-dev.com",
+                "owner": {
+                    "id": "3746656e-c319-447f-9fc1-2f85f1cbcd33"
+                }
+            }
+
+### Update project details [PUT]
+
++ Parameters
+    + projectId (UUID) - The unique identifier of the project.
+
++ Request Update project (application/json)
+
+        {
+            "name": "Sample project",
+            "description": "First project ever deployed on Bravehub platform.",
+            "domain": "myproject.external.bravehub-dev.com"
+        }
+
++ Response 204
+
+### Delete a project [DELETE]
+
++ Parameters
+    + projectId (UUID) - The unique identifier of the project.
+
++ Response 204
+
+
+# Group APIs
+
+This group of resources allows the management of apis for a given project. From bravehub point of view, a project is composed of one or more APIs each exposing a unique collection.
+
+<img src="../../docs/images/project-apis.png" width="100%" />
+
+## APIs collection [/projects/{projectId}/apis]
+
+Allows the management of apis for a given project.
+
+### Retrieve existing APIs [GET]
+
++ Parameters
+    + projectId (UUID,required) - The project unique identifier for which we retrieve the associated APIs.
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "items": [
+                    {
+                        "id": "4a674c39-f239-4717-a97e-983a201ece7d",
+                        "path": "/api/v1/news",
+                        "project": {
+                            "id": "5cf47fb5-ab1e-485b-9934-3e8cd062487e",
+                            "name": "Project 1"
+                        }
+                    }
+                ],
+                "startRecord": "4a674c39-f239-4717-a97e-983a201ece7d",
+                "endRecord": "4a674c39-f239-4717-a97e-983a201ece7d",
+                "previous": undefined,
+                "next": undefined,
+                "limit": 1
+            }
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The project {projectId} does not exist."
+            }
+
+### Create a new API [POST]
+
+This allows a complete definition of a new API together with all subresources. We do this, because
+it is in developers best interest to put their API up as fast as possible. After creating a new API, the developer must indicate the binary assets required by his API:
+
+* Configuration (optional)
+* Droplet (mandatory)
+
++ Parameters
+    + projectId (UUID,required) - The project unique identifier for which we retrieve the associated APIs.
+
++ Request API (application/json)
+
+    + Body
+
+            {
+                "path": "/api/v1/news",
+                "project": {
+                    "id": "5cf47fb5-ab1e-485b-9934-3e8cd062487e",
+                    "name": "Project 1"
+                },
+                "builds": [
+                    {
+                        "build": 1,
+                        "description": "The first working build of the news api.",
+                        "configuration": {
+                            "secrets": [
+                                {
+                                    "key": "AWS_ACCESS_TOKEN",
+                                    "value": "<sample token>"
+                                }
+                            ],
+                            "environment": [
+                                {
+                                    "key": "ENVIRONMENT",
+                                    "value": "dev"
+                                },
+                                {
+                                    "key": "S3_BINARIES_BUCKET",
+                                    "value": "myapp-binaries-bucket"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+
++ Response 201
+
+    + Headers
+
+            Location: /projects/{projectId}/apis/4a674c39-f239-4717-a97e-983a201ece7d
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The project {projectId} does not exist."
+            }
+
+## API [/projects/{projectId}/apis/{apiId}]
+
+This resource allows the management of individual APIs.
+
+### Get individual API [GET]
+
++ Parameters
+    + projectId (UUID,required) - The project unique identifier for which we retrieve the associated APIs.
+    + apiId (UUID,required) - The api unique identifier we want to retrieve information for.
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "id": "4a674c39-f239-4717-a97e-983a201ece7d",
+                "path": "/api/v1/news",
+                "project": {
+                    "id": "5cf47fb5-ab1e-485b-9934-3e8cd062487e",
+                    "name": "Project 1"
+                },
+                "builds": [
+                    {
+                        "id": "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b",
+                        "build": 1,
+                        "description": "The first working build of the news api.",
+                        "configuration": {
+                            "secrets": [
+                                {
+                                    "id": "c9e4cad2-113d-4711-b7a7-1059440c75e7",
+                                    "key": "AWS_ACCESS_TOKEN"
+                                }
+                            ],
+                            "environment": [
+                                {
+                                    "id": "c9e4cad2-113d-4711-b7a7-1059440c75e7",
+                                    "key": "ENVIRONMENT",
+                                    "value": "dev"
+                                },
+                                {
+                                    "id": "c9e4cad2-113d-4711-b7a7-1059440c75e9",
+                                    "key": "S3_BINARIES_BUCKET",
+                                    "value": "myapp-binaries-bucket"
+                                }
+                            ],
+                            "assets": [
+                                {
+                                    "id": "c9e4cad2-113d-4711-b7a7-1059440c75eg",
+                                    "downloadPath": "/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/configs/assets/c9e4cad2-113d-4711-b7a7-1059440c75eg/application.conf",
+                                    "mountPath": "/application.conf"
+                                }
+                            ]
+                        },
+                        "droplet": {
+                            "id": "f1cc767f-5f55-403a-876b-2dce49225e22",
+                            "downloadPath": "/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/droplets/1.0-alpha-1.tar.gz",
+                            "md5Sum": "448a3849df8c839fe5d1c31de2427ab8",
+                            "fileSize": "8589934592"
+                        }
+                    }
+                ]
+            }
+
++ Response 404 (application/json)
+
+    In practice a user should not end up with a 404 because he navigates the APIs starting from the project level. Nonetheless, the API validates all required parameters and returns 404 if any of them points to a resource which is missing.
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The api {apiId} does not exist."
+            }
+
+### Update an existing API [PUT]
+
++ Parameters
+    + projectId (UUID,required) - The project unique identifier for which we retrieve the associated APIs.
+    + apiId (UUID,required) - The api unique identifier we want to retrieve information for.
+
++ Request 200 (application/json)
+
+    + Body
+
+            {
+                "path": "/api/v1/news",
+                "project": {
+                    "id": "5cf47fb5-ab1e-485b-9934-3e8cd062487e",
+                    "name": "Project 1"
+                },
+                "builds": [
+                    {
+                        "id": "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b",
+                        "build": 1,
+                        "description": "The first build of the news api.",
+                        "configuration": {
+                            "secrets": [
+                                {
+                                    "id": "c9e4cad2-113d-4711-b7a7-1059440c75e7",
+                                    "key": "AWS_ACCESS_TOKEN",
+                                    "value": "<sample token>"
+                                },
+                                {
+                                    "id": "c9e4cad2-113d-4711-b7a7-1059440c75e9",
+                                    "key": "S3_BINARIES_BUCKET",
+                                    "value": "myapp-binaries-bucket"
+                                }
+                            ],
+                            "environment": [
+                                {
+                                    "id": "c9e4cad2-113d-4711-b7a7-1059440c75e7",
+                                    "key": "ENVIRONMENT",
+                                    "value": "dev"
+                                }
+                            ],
+                            "assets": [
+                                {
+                                    "id": "c9e4cad2-113d-4711-b7a7-1059440c75eg",
+                                    "downloadPath": "/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/configs/assets/c9e4cad2-113d-4711-b7a7-1059440c75eg/application.conf",
+                                    "mountPath": "/application.conf"
+                                }
+                            ]
+                        },
+                        "droplet": {
+                            "id": "f1cc767f-5f55-403a-876b-2dce49225e22",
+                            "downloadPath": "/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/droplets/1.0-alpha-1.tar.gz",
+                            "md5Sum": "448a3849df8c839fe5d1c31de2427ab8",
+                            "fileSize": "8589934592"
+                        }
+                    }
+                ]
+            }
+
++ Response 204
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The api {apiId} does not exist."
+            }
+
+### Delete an existing API [DELETE]
+
++ Parameters
+    + projectId (UUID,required) - The project unique identifier for which we retrieve the associated APIs.
+    + apiId (UUID,required) - The api unique identifier we want to retrieve information for.
+
++ Response 204
+
+# Group API Build
+
+This group allows granular management of existing builds belonging to an api.
+
+## API Build [/projects/{projectId}/apis/{apiId}/builds/{build}]
+
+Provides access to individual builds of an API. We need this kind of access for granular updates.
+
+### Fetch existing build [GET]
+
++ Parameters
+    + projectId (UUID,required) - The project unique identifier for which we retrieve the associated APIs.
+    + apiId (UUID,required) - The api unique identifier we want to retrieve information for.
+    + build (UUID,required) - The build logical number which is unique within an **apiId**.
+
++ Request Meta information (application/json)
+
++ Request Download droplet (application/vnd.bravehub.droplet-binary)
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "id": "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b",
+                "build": 1,
+                "description": "The first working build of the news api.",
+                "configuration": {
+                    "secrets": [
+                        {
+                            "id": "c9e4cad2-113d-4711-b7a7-1059440c75e7",
+                            "key": "AWS_ACCESS_TOKEN"
+                        }
+                    ],
+                    "environment": [
+                        {
+                            "id": "c9e4cad2-113d-4711-b7a7-1059440c75e7",
+                            "key": "ENVIRONMENT",
+                            "value": "dev"
+                        },
+                        {
+                            "id": "c9e4cad2-113d-4711-b7a7-1059440c75e9",
+                            "key": "S3_BINARIES_BUCKET",
+                            "value": "myapp-binaries-bucket"
+                        }
+                    ],
+                    "assets": [
+                        {
+                            "id": "c9e4cad2-113d-4711-b7a7-1059440c75eg",
+                            "downloadPath": "/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/configs/assets/c9e4cad2-113d-4711-b7a7-1059440c75eg/application.conf",
+                            "mountPath": "/application.conf"
+                        }
+                    ]
+                },
+                "droplet": {
+                    "id": "f1cc767f-5f55-403a-876b-2dce49225e22",
+                    "downloadPath": "/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/droplets/1.0-alpha-1.tar.gz",
+                    "md5Sum": "448a3849df8c839fe5d1c31de2427ab8",
+                    "fileSize": "8589934592"
+                }
+            }
+
++ Response 200 (application/octet-stream)
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The build {build} does not exist."
+            }
+
+### Update a build [PUT]
+
++ Parameters
+    + projectId (UUID,required) - The project unique identifier for which we retrieve the associated APIs.
+    + apiId (UUID,required) - The api unique identifier we want to retrieve information for.
+    + build (UUID,required) - The build number.
+
++ Request Meta information (application/json)
+
+    + Body
+
+            {
+                "description": "Modified description.",
+                "configuration": {
+                    "secrets": [
+                        {
+                            "id": "c9e4cad2-113d-4711-b7a7-1059440c75e7",
+                            "key": "AWS_ACCESS_TOKEN",
+                            "value": "<changed access token>"
+                        }
+                    ],
+                    "environment": [
+                        {
+                            "id": "c9e4cad2-113d-4711-b7a7-1059440c75e7",
+                            "key": "ENVIRONMENT",
+                            "value": "dev"
+                        },
+                        {
+                            "id": "c9e4cad2-113d-4711-b7a7-1059440c75e9",
+                            "key": "S3_BINARIES_BUCKET",
+                            "value": "myapp-binaries-bucket"
+                        }
+                    ]
+                }
+            }
+
++ Request Droplet content (application/vnd.bravehub.droplet-binary)
+
+    + Body
+
+            <place your binary content here>
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "build": 1,
+                "description": "The first working build of the news api.",
+                "configuration": {
+                    "secrets": [
+                        {
+                            "id": "c9e4cad2-113d-4711-b7a7-1059440c75e7",
+                            "key": "AWS_ACCESS_TOKEN"
+                        }
+                    ],
+                    "environment": [
+                        {
+                            "id": "c9e4cad2-113d-4711-b7a7-1059440c75e7",
+                            "key": "ENVIRONMENT",
+                            "value": "dev"
+                        },
+                        {
+                            "id": "c9e4cad2-113d-4711-b7a7-1059440c75e9",
+                            "key": "S3_BINARIES_BUCKET",
+                            "value": "myapp-binaries-bucket"
+                        }
+                    ],
+                    "assets": [
+                        {
+                            "id": "c9e4cad2-113d-4711-b7a7-1059440c75eg",
+                            "downloadPath": "/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/configs/assets/c9e4cad2-113d-4711-b7a7-1059440c75eg/application.conf",
+                            "mountPath": "/application.conf"
+                        }
+                    ]
+                },
+                "droplet": {
+                    "id": "f1cc767f-5f55-403a-876b-2dce49225e22",
+                    "downloadPath": "/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/droplets/1.0-alpha-1.tar.gz",
+                    "md5Sum": "448a3849df8c839fe5d1c31de2427ab8",
+                    "fileSize": "8589934592"
+                }
+            }
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The build {build} does not exist."
+            }
+
+# Group Configuration Assets
+
+This group allows the management of configuration assets which are automatically mount at app boot time.
+
+## Configuration Assets Collection [/projects/{projectId}/apis/{apiId}/builds/{build}/configassets]
+
+### Create a new asset [POST]
+
++ Parameters
+    + projectId (UUID,required) - The project unique identifier for which we retrieve the associated APIs.
+    + apiId (UUID,required) - The api unique identifier we want to retrieve information for.
+    + build (UUID,required) - The build logical number.
+
++ Request Binary asset (application/vnd.bravehub.configurationasset-binary)
+
+    + Headers
+
+            X-ConfigAsset-MountPath: "/application.conf"
+
+    + Body
+
+            <place you binary content here>
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "id": "c9e4cad2-113d-4711-b7a7-1059440c75eg",
+                "downloadPath": "/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/configs/assets/c9e4cad2-113d-4711-b7a7-1059440c75eg/application.conf",
+                "mountPath": "/application.conf"
+            }
+
+## Configuration Asset [/projects/{projectId}/apis/{apiId}/builds/{build}/configassets/{assetId}]
+
+### Download an existing asset [GET]
+
++ Parameters
+    + projectId (UUID,required) - The project unique identifier for which we retrieve the associated APIs.
+    + apiId (UUID,required) - The api unique identifier we want to retrieve information for.
+    + build (UUID,required) - The build logical number.
+    + assetId (UUID,required) - The asset unique identifier.
+
++ Request Meta information (application/json)
+
++ Request Binary content (application/vnd.bravehub.configurationasset-binary)
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "id": "c9e4cad2-113d-4711-b7a7-1059440c75eg",
+                "downloadPath": "/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/configs/assets/c9e4cad2-113d-4711-b7a7-1059440c75eg/application.conf",
+                "mountPath": "/application.conf"
+            }
+
+
++ Response 200 (application/octet-stream)
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The asset {assetId} does not exist."
+            }

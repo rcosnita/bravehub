@@ -37,17 +37,16 @@ put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "owner:id", "37
 create "bravehub:apis", "attrs", "project", "versions"
 put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "attrs:path", "/api/v1/news"
 put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "project:id", "5cf47fb5-ab1e-485b-9934-3e8cd062487e"
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "project:name", "5cf47fb5-ab1e-485b-9934-3e8cd062487e"
+put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "project:name", "Project 1"
 put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "versions:list", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b"
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "versions:2ffbbaa2-cfd2-495c-9eeb-43d7c307104b-version", "1.0-alpha"
+put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "versions:builds", "[{\"id\": 2ffbbaa2-cfd2-495c-9eeb-43d7c307104b, \"build\": 1}]"
 
 
-create "bravehub:apiversions", "attrs", "api"
-put "bravehub:apiversions", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b", "attrs:version", "1.0-alpha"
-put "bravehub:apiversions", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b", "attrs:description", "The first working version of the news api."
-put "bravehub:apiversions", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b", "api:id",
+create "bravehub:apibuilds", "attrs", "api"
+put "bravehub:apibuilds", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b", "attrs:build", 1
+put "bravehub:apibuilds", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b", "attrs:description", "The first working version of the news api."
+put "bravehub:apibuilds", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b", "api:id",
 "4a674c39-f239-4717-a97e-983a201ece7d"
-
 
 create "bravehub:apiconfigurations", "version", "droplet"
 put "bravehub:apiconfigurations", "bb30d77f-0f0f-49fb-9439-243448422ddb", "version:id", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b"

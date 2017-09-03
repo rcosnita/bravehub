@@ -1,0 +1,171 @@
+FORMAT: 1a
+HOST: http://provisioning-api.api.internal.bravehub.com
+
+# Provisioning
+
+The provisioning API provides a REST interface for managing provisioning meta information which are deployed by **Provisioning Orchestrator**.
+
+It is recommended to take a quick look at the architecture diagram before digging into the current API.
+
+<img src="../../docs/images/architecture-overview.png" width="100%" />
+
+Starting from the diagram, there are several components which can alter the provisioning meta information:
+
+* Configuration API
+    - Based on the requested changes from the end user it might end up recording the provisioning information.
+* Scaler API
+    - This API will only change the number of instances currently used for specific configurations. It can scale up or down based on the current service demand.
+
+# Group States
+
+The provisioning API allows the definition of a state machine. The **Provisioner Orchestrator** polls the states in order and push them to the container infrastructure.
+
+
+## States Collection [/projects/{projectId}/apis/{apiId}/builds/{build}/states]
+
+Obtains information about the states defined for a specific project build. You can read more about project configuration on <a href="configuration-api.apib.html">Configuration API</a>.
+
+### Fetch available states [GET]
+
+This API provides all states which are not already running in the infrastructure. These states are ordered by date.
+
+There is a big assumption that the number of pending states is low so there is no need for pagination.
+
++ Parameters
+    + projectId (UUID,required) - The project unique identifier for which we retrieve the associated APIs.
+    + apiId (UUID,required) - The api unique identifier we want to retrieve information for.
+    + build (UUID,required) - The build logical number.
+
++ Request All pending states (application/json)
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "items": [
+                    {
+                        "id": "9f0768f8-4c6e-4100-816c-5241d3f21d45",
+                        "creationDate": "2017-09-04T23:57:45",
+                        "deployed": false,
+                        "deployedDate": undefined,
+                        "desiredInstances": 7,
+                        "state": "PENDING",
+                        "workersDomain": "swarm-general-purpose.api.internal.bravehub-dev.com"
+                    },
+                    {
+                        "id": "9f0768f8-4c6e-4100-816c-5241d3f21d46",
+                        "creationDate": "2017-09-04T23:58:30",
+                        "deployed": false,
+                        "deployedDate": undefined,
+                        "desiredInstances": 5,
+                        "state": "PENDING",
+                        "workersDomain": "swarm-general-purpose.api.internal.bravehub-dev.com"
+                    },
+                    {
+                        "id": "9f0768f8-4c6e-4100-816c-5241d3f21d47",
+                        "creationDate": "2017-09-04T01:00:00",
+                        "deployed": false,
+                        "deployedDate": undefined,
+                        "desiredInstances": 2,
+                        "state": "PENDING",
+                        "workersDomain": "swarm-general-purpose.api.internal.bravehub-dev.com"
+                    },
+                    "startRecord": "9f0768f8-4c6e-4100-816c-5241d3f21d45",
+                    "endRecord": "9f0768f8-4c6e-4100-816c-5241d3f21d47",
+                    "previous": undefined,
+                    "next": undefined,
+                    "limit": undefined
+                ]
+            }
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The build {build} does not exist."
+            }
+
+### Queue a new state [POST]
+
+Create a new state that will be pushed to the infrastructure.
+
++ Parameters
+    + projectId (UUID,required) - The project unique identifier for which we retrieve the associated APIs.
+    + apiId (UUID,required) - The api unique identifier we want to retrieve information for.
+    + build (UUID,required) - The build logical number.
+
++ Request New deployment (application/json)
+
++ Request Scale up / down (application/json)
+
+    + Body
+
+            {
+                "desiredInstances": 10
+            }
+
++ Request Uninstall service (application/json)
+
+    + Body
+
+            {
+                "deployed": false
+            }
+
++ Response 201 (application/json)
+
+    + Headers
+
+            Location: /projects/{projectId}/apis/{apiId}/builds/{build}/states/9f0768f8-4c6e-4100-816c-5241d3f21d45
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The build {build} does not exist."
+            }
+
+## State [/projects/{projectId}/apis/{apiId}/builds/{build}/states/{stateId}]
+
+Fetch information about an existing provisioning state.
+
+### Fetch state [GET]
+
++ Parameters
+    + projectId (UUID,required) - The project unique identifier for which we retrieve the associated APIs.
+    + apiId (UUID,required) - The api unique identifier we want to retrieve information for.
+    + build (UUID,required) - The build logical number.
+    + stateId (UUID,required) - The existing state unique identifier.
+
++ Request Get state (application/json)
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "id": "9f0768f8-4c6e-4100-816c-5241d3f21d45",
+                "creationDate": "2017-09-04T23:57:45",
+                "deployed": true,
+                "deployedDate": "2017-09-04T23:58:10",
+                "state": "RUNNING",
+                "desiredInstances": 7,
+                "workersDomain": "swarm-general-purpose.api.internal.bravehub-dev.com"
+            }
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The state {stateId} does not exist."
+            }
