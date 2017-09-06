@@ -12,10 +12,12 @@
 ##############################################################################
 create_namespace "bravehub"
 
-create "bravehub:projectowners", "attrs"
+create "bravehub:projectowners", "attrs", "projects"
 put "bravehub:projectowners", "3746656e-c319-447f-9fc1-2f85f1cbcd33", "attrs:email", "radu.cosnita@gmail.com"
 put "bravehub:projectowners", "3746656e-c319-447f-9fc1-2f85f1cbcd33", "attrs:authentication_provider", "github"
 put "bravehub:projectowners", "3746656e-c319-447f-9fc1-2f85f1cbcd33", "attrs:authorization_provider", "bravehub"
+put "bravehub:projectowners", "3746656e-c319-447f-9fc1-2f85f1cbcd33",
+"projects:5cf47fb5-ab1e-485b-9934-3e8cd062487e", "{\"name\": \"Project 1\", \"description\": \"First project ever deployed on Bravehub platform.\", \"domain\": \"myproject\"}"
 
 # A simple example which retrieve all owners which belong to bravehub authorization provider.
 # For more details, read deployment/examples/happybase-sample.py.
@@ -26,48 +28,33 @@ import org.apache.hadoop.hbase.filter.CompareFilter
 scan 'bravehub:projectowners', { FILTER => SingleColumnValueFilter.new(Bytes.toBytes('attrs'), Bytes.toBytes('authorization_provider'), CompareFilter::CompareOp.valueOf('EQUAL'), BinaryComparator.new(Bytes.toBytes('bravehub')))}
 
 
-create "bravehub:projects", "attrs", "owner"
+create "bravehub:projects", "attrs", "owner", "apis"
 put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "attrs:name", 
 "Project 1"
 put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "attrs:description", "First project ever deployed on Bravehub platform."
-put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "attrs:domain", "myproject.external.bravehub-dev.com"
+put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "attrs:domain", "myproject"
 put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "owner:id", "3746656e-c319-447f-9fc1-2f85f1cbcd33"
+put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "apis:4a674c39-f239-4717-a97e-983a201ece7d", "{\"path\": \"/api/v1/news\"}"
 
 
-create "bravehub:apis", "attrs", "project", "versions"
+create "bravehub:apis", "attrs", "project", "builds"
 put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "attrs:path", "/api/v1/news"
 put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "project:id", "5cf47fb5-ab1e-485b-9934-3e8cd062487e"
 put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "project:name", "Project 1"
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "versions:list", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b"
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "versions:builds", "[{\"id\": 2ffbbaa2-cfd2-495c-9eeb-43d7c307104b, \"build\": 1}]"
+put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-attrs", "{\"id\": \"bb30d77f-0f0f-49fb-9439-243448422ddb\", \"description\": \"The first working version of the news api.\"}"
 
+put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", 
+"builds:counter", 1
 
-create "bravehub:apibuilds", "attrs", "api"
-put "bravehub:apibuilds", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b", "attrs:build", 1
-put "bravehub:apibuilds", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b", "attrs:description", "The first working version of the news api."
-put "bravehub:apibuilds", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b", "api:id",
-"4a674c39-f239-4717-a97e-983a201ece7d"
+put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", 
+"builds:1-secrets", "[{\"id\": \"c9e4cad2-113d-4711-b7a7-1059440c75e7\", \"key\": \"AWS_ACCESS_TOKEN\", \"value\": \"sample secret\"}]"
 
-create "bravehub:apiconfigurations", "version", "droplet"
-put "bravehub:apiconfigurations", "bb30d77f-0f0f-49fb-9439-243448422ddb", "version:id", "2ffbbaa2-cfd2-495c-9eeb-43d7c307104b"
-put "bravehub:apiconfigurations", "bb30d77f-0f0f-49fb-9439-243448422ddb", "version:version", "1.0-alpha"
-put "bravehub:apiconfigurations", "bb30d77f-0f0f-49fb-9439-243448422ddb", "droplet:id", "df3feba0-73cb-4f36-9455-039cd2a9d5bb"
-put "bravehub:apiconfigurations", "bb30d77f-0f0f-49fb-9439-243448422ddb", "droplet:download_path", "/droplets/df3feba0-73cb-4f36-9455-039cd2a9d5bb/droplet.tar.gz"
+put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", 
+"builds:1-env", "[{\"id\": \"c9e4cad2-113d-4711-b7a7-1059440c75e7\", \"key\": \"ENVIRONMENT\", \"value\": \"dev\"}, {\"id\": \"c9e4cad2-113d-4711-b7a7-1059440c75e9\", \"key\": \"S3_BINARIES_BUCKET\", \"value\": \"myapp-binaries-bucket\"}]"
 
+put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-assets-c9e4cad2-113d-4711-b7a7-1059440c75eg", "{\"download_path\": \"/configs/assets/c9e4cad2-113d-4711-b7a7-1059440c75eg/application.conf\",\"mount_path\": \"\/application.conf\"}"
 
-create "bravehub:apidroplets", "attrs"
-put "bravehub:apidroplets", "bb30d77f-0f0f-49fb-9439-243448422ddb", "attrs:download_path", "/droplets/df3feba0-73cb-4f36-9455-039cd2a9d5bb/droplet.tar.gz"
-put "bravehub:apidroplets", "bb30d77f-0f0f-49fb-9439-243448422ddb", "attrs:md5sum", "121ef03ec9be1082a7e73b6ad339877d"
-put "bravehub:apidroplets", "bb30d77f-0f0f-49fb-9439-243448422ddb", "attrs:file_size", "10240"
-
-
-create "bravehub:apiconfigurationenvironment", "attrs", "config"
-put "bravehub:apiconfigurationenvironment", "31961b45-6ebc-4bcf-b971-64ab70c40dbe", "attrs:key", "role"
-put "bravehub:apiconfigurationenvironment", "31961b45-6ebc-4bcf-b971-64ab70c40dbe", "attrs:value", "router-instance-1"
-put "bravehub:apiconfigurationenvironment", "31961b45-6ebc-4bcf-b971-64ab70c40dbe", "config:id", "bb30d77f-0f0f-49fb-9439-243448422ddb"
-put "bravehub:apiconfigurationenvironment", "31961b45-6ebc-4bcf-b971-64ab70c40dbe", "config:version_id", "bb30d77f-0f0f-49fb-9439-243448422ddb"
-put "bravehub:apiconfigurationenvironment", "31961b45-6ebc-4bcf-b971-64ab70c40dbe", "config:droplet_id", "bb30d77f-0f0f-49fb-9439-243448422ddb"
-
+put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-droplet", "{\"id\": \"df3feba0-73cb-4f36-9455-039cd2a9d5bb\", \"download_path\": \"/droplets/df3feba0-73cb-4f36-9455-039cd2a9d5bb/droplet.tar.gz\", \"md5sum\": \"448a3849df8c839fe5d1c31de2427ab8\", \"file_size\": \"8589934592\"}"
 
 create "bravehub:apiinfrastructure", "attrs", "state"
 put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "attrs:entry_point", "java -jar myapp.jar"

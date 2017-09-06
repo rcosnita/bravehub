@@ -9,15 +9,19 @@ services:
       - run
       - --host=0.0.0.0
     environment:
+      BRAVEHUB_DEBUG: 1
       BRAVEHUB_SUFFIX: "bravehub-dev.com"
       FLASK_DEBUG: 1
       FLASK_APP: src/app.py
+      HBASE_THRIFT_API: hbase-thrift.api.internal.bravehub-dev.com
+      NAS_MOUNT: /root/nas
       PYTHONPATH: .:src
     ports:
       - "0.0.0.0:5000:5000"
     volumes:
       - ./configuration-api:/root/configuration-api:consistent
       - ./bravehub_shared:/root/configuration-api/src/bravehub_shared:consistent
+      - nas-storage:/root/nas
   logging-api.api.internal.bravehub-dev.com:
     build:
       context: .
@@ -163,3 +167,4 @@ services:
 volumes:
   hadoop-zk-storage: { }
   hadoop-hbase-storage: { }
+  nas-storage: { }
