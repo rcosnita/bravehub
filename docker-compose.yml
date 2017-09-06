@@ -9,9 +9,11 @@ services:
       - run
       - --host=0.0.0.0
     environment:
+      BRAVEHUB_DEBUG: 1
       BRAVEHUB_SUFFIX: "bravehub-dev.com"
       FLASK_DEBUG: 1
       FLASK_APP: src/app.py
+      HBASE_THRIFT_API: hbase-thrift.api.internal.bravehub-dev.com
       PYTHONPATH: .:src
     ports:
       - "0.0.0.0:5000:5000"
