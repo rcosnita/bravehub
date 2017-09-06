@@ -3,3 +3,4 @@ deployment/provisioning/images/*.tar
 venv
 dist
 node_modules
+*.pyc
