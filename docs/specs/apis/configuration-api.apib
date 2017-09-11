@@ -98,7 +98,7 @@ This group is responsible meta information for projects. It is not in the scope 
                         "id": "5cf47fb5-ab1e-485b-9934-3e8cd062487e",
                         "name": "Sample project",
                         "description": "First project ever deployed on Bravehub platform.",
-                        "domain": "myproject.external.bravehub-dev.com",
+                        "domain": "myproject",
                         "owner": {
                             "id": "3746656e-c319-447f-9fc1-2f85f1cbcd33"
                         }
@@ -109,6 +109,46 @@ This group is responsible meta information for projects. It is not in the scope 
                 "previous": undefined,
                 "next": "/projects?startRecord=5cf47fb5-ab1e-485b-9934-3e8cd062487f&limit=1",
                 "limit": 1
+            }
+
+### Create new project [POST]
+
++ Request New project (application/json)
+
+    + Body
+
+            {
+                "name": "Sample project",
+                "description": "First project ever deployed on Bravehub platform.",
+                "domain": "myproject"
+            }
+
++ Response 201 (application/json)
+
+    + Headers
+
+            Location: /v0.1/projects/5cf47fb5-ab1e-485b-9934-3e8cd062487e
+
++ Response 409 (application/json)
+
+    In case the resource already exists, you receive a 409 response.
+
+    + Headers
+
+            Location: /v0.1/projects/0c864024-f832-42c9-ac37-11ee0643d177
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.2",
+                "errorCode": "RESOURCE.DUPLICATED",
+                "errorDescription": "The current resource is duplicated. See Location header for more information.",
+                "project": {
+                    "name": "Project 2",
+                    "description": "Second project ever deployed on Bravehub platform.",
+                    "domain": "myproject",
+                    "id": "0c864024-f832-42c9-ac37-11ee0643d177"
+                }
             }
 
 ## Project [/projects/{projectId}]
@@ -126,10 +166,20 @@ This group is responsible meta information for projects. It is not in the scope 
                 "id": "5cf47fb5-ab1e-485b-9934-3e8cd062487e",
                 "name": "Sample project",
                 "description": "First project ever deployed on Bravehub platform.",
-                "domain": "myproject.external.bravehub-dev.com",
+                "domain": "myproject",
                 "owner": {
                     "id": "3746656e-c319-447f-9fc1-2f85f1cbcd33"
                 }
+            }
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The project {projectId} does not exist."
             }
 
 ### Update project details [PUT]
@@ -142,10 +192,20 @@ This group is responsible meta information for projects. It is not in the scope 
         {
             "name": "Sample project",
             "description": "First project ever deployed on Bravehub platform.",
-            "domain": "myproject.external.bravehub-dev.com"
+            "domain": "myproject2"
         }
 
 + Response 204
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The project {projectId} does not exist."
+            }
 
 ### Delete a project [DELETE]
 
@@ -154,6 +214,15 @@ This group is responsible meta information for projects. It is not in the scope 
 
 + Response 204
 
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The project {projectId} does not exist."
+            }
 
 # Group APIs
 

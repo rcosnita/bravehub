@@ -2,6 +2,7 @@
 
 import json
 import urllib.parse as parse
+from bravehub_shared.utils.dynamic_object import DynamicObject
 
 class ApiClient(object):
   """The generic class for the api client."""
@@ -9,22 +10,9 @@ class ApiClient(object):
   DEFAULT_CHARSET = "utf-8"
   API_INTERNAL = "api.internal"
 
-  class ApiClientResponseBody(dict):
-    """Provides a simple wrapper which allows us to simulate an object based on the dictionary
-    keys."""
-
-    def __init__(self, data):
-      super(ApiClient.ApiClientResponseBody, self).__init__()
-      self._data = data or {}
-      self.update(self._data)
-
-    def __getattr__(self, name):
-      value = super(ApiClient.ApiClientResponseBody, self).get(name)
-
-      if isinstance(value, dict):
-        return ApiClient.ApiClientResponseBody(value)
-
-      return value
+  class ApiClientResponseBody(DynamicObject):
+    """Provides the model for api client responses."""
+    pass
 
   class ApiClientResponse(object):
     """Provides a simple model returned by api client operations in order to describe

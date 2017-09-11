@@ -14,6 +14,8 @@ class CoreContainer(DeclarativeContainer): # pylint: disable=too-few-public-meth
 
   config = Configuration("config")
 
+  DEFAULT_CHARSET = "utf-8"
+
 class ApiClientsContainer(DeclarativeContainer): # pylint: disable=too-few-public-methods
   """Provides all api clients which can be used in bravehub modules and micro services."""
 
