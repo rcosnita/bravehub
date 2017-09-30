@@ -1,6 +1,8 @@
 __pycache__
 deployment/provisioning/images/*.tar
+load-balancer/src/build
 venv
 dist
 node_modules
 *.pyc
+.search-index
