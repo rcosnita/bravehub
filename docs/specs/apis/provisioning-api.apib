@@ -169,3 +169,36 @@ Fetch information about an existing provisioning state.
                 "errorCode": "RESOURCE.NOTFOUND",
                 "errorDescription": "The state {stateId} does not exist."
             }
+
+
+## Domains collection [/domains{?domain}{&path}]
+
+Retrieves the internal location where the current request will be routed. Remember that each API defined for a project
+has a unique path. Domain helps us identify the project while the path helps us identify the API.
+
+### Query route [GET]
+
++ Parameters
+    + domain (string,required) - The domain belonging to an existing project.
+    + path (string, required) - The path which uniquely identify an api of the project.
+
++ Request Query for route (application/json)
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "workerDomain": "workers.internal.bravehub-dev.com",
+                "workerPort": 30000
+            }
+
++ Response 404 (application/json)
+
+    + Body
+
+            {
+                "errorId": "RESOURCE.1",
+                "errorCode": "RESOURCE.NOTFOUND",
+                "errorDescription": "The state {stateId} does not exist."
+            }

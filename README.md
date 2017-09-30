@@ -47,6 +47,18 @@ For instance, you might want to run the unit tests for the configuration api pro
 sh cicd/run-unit-tests.sh configuration-api
 ```
 
+### CPP linting
+
+```bash
+sh cicd/lint-code.sh load-balancer
+```
+
+### CPP Core Guidelines
+
+```bash
+sh cicd/lint-code.sh load-balancer
+```
+
 ## Generate APIs documentation
 
 ```bash
