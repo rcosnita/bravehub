@@ -53,12 +53,6 @@ sh cicd/run-unit-tests.sh configuration-api
 sh cicd/lint-code.sh load-balancer
 ```
 
-### CPP Core Guidelines
-
-```bash
-sh cicd/lint-code.sh load-balancer
-```
-
 ## Generate APIs documentation
 
 ```bash

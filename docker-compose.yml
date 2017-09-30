@@ -164,6 +164,18 @@ services:
       DELAYED_START_MS: 10000
     volumes:
       - ./deployment/examples/python:/root/python:ro
+  router.api.internal.bravehub-dev.com:
+    build:
+      context: load-balancer
+      dockerfile: Dockerfile
+    ports:
+      - "0.0.0.0:80:8080"
+    volumes:
+      - ./load-balancer/config/nginx.conf:/etc/nginx/nginx.conf
+  nginx-sample-app.internal.bravehub-dev.com:
+    image: nginx:1.13.5-alpine
+  tomcat-sample-app.internal.bravehub-dev.com:
+    image: tomcat:7.0.81-alpine
 volumes:
   hadoop-zk-storage: { }
   hadoop-hbase-storage: { }
