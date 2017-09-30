@@ -15,6 +15,10 @@ indent_size = 2
 indent_style = space
 indent_size = 2
 
+[*.{c,cpp}]
+indent_style = space
+indent_size = 2
+
 [Makefile]
 indent_style = space
 indent_size = 2

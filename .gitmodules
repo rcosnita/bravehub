@@ -1,0 +1,12 @@
+[submodule "load-balancer/third-party/rapidjson"]
+	path = load-balancer/third-party/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
+[submodule "load-balancer/third-party/depot_tools"]
+	path = load-balancer/third-party/depot_tools
+	url = https://chromium.googlesource.com/chromium/tools/depot_tools
+[submodule "load-balancer/third-party/clang-format"]
+	path = load-balancer/third-party/clang-format
+	url = https://github.com/angular/clang-format.git
+[submodule "load-balancer/third-party/cpp-core-guidelines"]
+	path = load-balancer/third-party/cpp-core-guidelines
+	url = https://github.com/isocpp/CppCoreGuidelines.git

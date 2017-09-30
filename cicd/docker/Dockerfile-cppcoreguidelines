@@ -1,0 +1,28 @@
+FROM ubuntu:latest
+
+ENV NGINX_VERSION release-1.13.5 
+
+RUN apt-get update -y && \
+    apt-get install -y clang-tidy-4.0 git gcc g++ libpcre3-dev zlib1g-dev && \
+    git clone https://github.com/nginx/nginx.git /root/third-party/nginx && \
+    cd /root/third-party/nginx && \
+    git checkout ${NGINX_VERSION} && \
+    ./auto/configure
+
+WORKDIR /root
+ENTRYPOINT find ${CPP_LINTING_PATH} -name '*.cpp' | grep -v '.*/build/.*' | xargs -I{} -n 1 -P 8 clang-tidy-4.0 {} \
+  -warnings-as-errors=* \
+  -checks=-clang-diagnostic-error,cppcoreguidelines-* -- \
+  -std=c++11 \
+  -I/root/third-party/nginx/src/core \
+  -I/root/third-party/nginx/src/event \
+  -I/root/third-party/nginx/src/http \
+  -I/root/third-party/nginx/src/http/modules \
+  -I/root/third-party/nginx/src/http/modules/perl \
+  -I/root/third-party/nginx/src/os/unix \
+  -I/root/third-party/nginx/objs \
+  -Ithird-party/rapidjson/include \
+  -Isrc \
+  -I/usr/include/c++/5 \
+  -I/usr/lib/gcc/x86_64-linux-gnu/5/include \
+  -I/usr/lib/gcc/x86_64-linux-gnu/5/include-fixed
