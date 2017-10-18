@@ -3,7 +3,6 @@ binary content for assets and droplets."""
 
 import json
 import os
-import uuid
 
 from bravehub_shared.exceptions.bravehub_exceptions import \
   BravehubDuplicateEntryException, BravehubNotFoundException
@@ -54,7 +53,7 @@ class ConfigBinariesService(BravehubService):
   def download_droplet(self, project_id, api_id, build):
     """Downloads the droplet for the specified build."""
 
-    (project, api) = self._validate_has_build(project_id, api_id, build)
+    (project, api) = self._validate_has_build(project_id, api_id, build) #pylint: disable=unused-variable
 
     droplet_cell = "builds:{0}-droplet".format(build)
     droplet = DynamicObject(json.loads(api[bytes(droplet_cell, self._charset)]\
@@ -63,10 +62,10 @@ class ConfigBinariesService(BravehubService):
     return self._file_system.get(file_path=droplet.download_path)
 
   @FlaskResponseGenerator()
-  def save_configasset(self, project_id, api_id, build, mount_path, content, asset_id=None):
+  def save_configasset(self, project_id, api_id, build, mount_path, content, asset_id=None): #pylint: disable=too-many-arguments,too-many-locals
     """Save the given configuration asset."""
 
-    (project, api, asset) = self._validate_has_asset(project_id, api_id, build, asset_id)
+    (project, api, asset) = self._validate_has_asset(project_id, api_id, build, asset_id) #pylint: disable=unused-variable
 
     if not asset_id:
       self._enforce_mount_path_unicity(project_id, api_id, api, build, mount_path)
@@ -102,7 +101,7 @@ class ConfigBinariesService(BravehubService):
   def download_configasset(self, project_id, api_id, build, asset_id):
     """Downloads the asset content if available."""
 
-    (project, api, asset) = self._validate_has_asset(project_id, api_id, build, asset_id)
+    (project, api, asset) = self._validate_has_asset(project_id, api_id, build, asset_id) #pylint: disable=unused-variable
     return self._file_system.get(file_path=asset.download_path)
 
   def _get_build(self, api, build):

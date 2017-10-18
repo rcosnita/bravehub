@@ -4,8 +4,25 @@ to the end user."""
 
 import json
 
+from bravehub_shared.utils.dynamic_object import DynamicObject
 from bravehub_shared.exceptions.bravehub_exceptions import BravehubPlatformException
 from bravehub_shared.services.base_service import PLATFORM_DEBUG
+
+class PaginatedResponse(DynamicObject):
+  """Provides a simple model for describing paginated results to clients."""
+
+  def __init__(self, items):
+    super().__init__()
+    self._items = items
+
+    self.update({
+      "items": self._items,
+      "startRecord": None,
+      "endRecord": None,
+      "previous": None,
+      "next": None,
+      "limit": None
+    })
 
 class FlaskResponseGenerator(object):
   """This is a method decorator which transform the return value of a method to a serializable
@@ -42,7 +59,7 @@ class FlaskResponseGenerator(object):
         if isinstance(result, flask_app.response_class):
           return result
 
-        if self._is_file_like(result):
+        if not isinstance(result, dict) and self._is_file_like(result):
           return flask_app.send_file(result, mimetype="application/octet-stream")
 
         if not empty_body:
@@ -62,7 +79,7 @@ class FlaskResponseGenerator(object):
         if self._is_debug:
           raise ex
 
-        # TODO Log the generic exception in the application log.
+        # TODO(cosnita) Log the generic exception in the application log.
         platform_ex = BravehubPlatformException(ex)
 
       response = flask_app.response_class(response=json.dumps(platform_ex.body),

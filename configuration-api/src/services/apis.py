@@ -2,10 +2,10 @@
 import json
 
 from bravehub_shared.exceptions.bravehub_exceptions import \
-  BravehubDuplicateEntryException, BravehubNotFoundException, BravehubNotImplementedException
+  BravehubDuplicateEntryException, BravehubNotFoundException
 from bravehub_shared.services.base_service import BravehubService
 from bravehub_shared.utils.dynamic_object import DynamicObject
-from bravehub_shared.utils.flask_response_generator import FlaskResponseGenerator
+from bravehub_shared.utils.flask_response_generator import FlaskResponseGenerator, PaginatedResponse
 
 class ProjectApiService(BravehubService):
   """Provides the services which offers all management methods for apis."""
@@ -34,23 +34,17 @@ class ProjectApiService(BravehubService):
       apis[-1]["id"] = key.decode(self._charset).replace("apis:", "")
       apis[-1].update({"project": project_attrs})
 
-    return {
-      "items": apis,
-      "startRecord": None,
-      "endRecord": None,
-      "previous": None,
-      "next": None,
-      "limit": None
-    }
+    return PaginatedResponse(items=apis)
 
   @FlaskResponseGenerator()
-  def create_api(self, project_id, api_data):
+  def create_api(self, project_id, api_data): #pylint: disable=too-many-locals
     """Creates a new API and associates it with the given project."""
 
     project = self._project_service.get_nondeleted_project(project_id)
 
     api_data = DynamicObject(api_data)
     api_path = api_data.path
+    api_ports = api_data.get("exposedPorts", [])
 
     self._validate_api_notfound(project_id, project, api_path)
 
@@ -76,6 +70,7 @@ class ProjectApiService(BravehubService):
         b"project:id": bytes(project_id, self._charset),
         b"project:name": project[b"attrs:name"],
         b"attrs:path": bytes(api_path, self._charset),
+        b"attrs:ports": bytes(json.dumps(api_ports), self._charset),
         b"builds:counter": b"1",
         b"builds:1-attrs": bytes(json.dumps(build_attrs), self._charset),
         b"builds:1-secrets": bytes(json.dumps(secrets_data), self._charset),
@@ -92,7 +87,7 @@ class ProjectApiService(BravehubService):
     return None, 201, {"Location": self._get_api_location(project_id, api_id.decode(self._charset))}
 
   @FlaskResponseGenerator()
-  def update_api(self, project_id, api_id, api_data):
+  def update_api(self, project_id, api_id, api_data): #pylint: disable=too-many-locals
     """Provides the algorithm for updating an existing api definition."""
 
     project = self._project_service.get_nondeleted_project(project_id)
@@ -142,7 +137,7 @@ class ProjectApiService(BravehubService):
     return None, 204, {}
 
   @FlaskResponseGenerator()
-  def get_api(self, project_id, api_id, build_num=None, asset_id=None):
+  def get_api(self, project_id, api_id, build_num=None, asset_id=None): #pylint: disable=too-many-locals
     """Fetches an existing API from the database (if any is available)."""
 
     api = self.get_nondeleted_api(bytes(project_id, self._charset), bytes(api_id, self._charset))
@@ -152,7 +147,7 @@ class ProjectApiService(BravehubService):
 
     for idx in range(1, builds_counter + 1):
       build_attrs = DynamicObject(json.loads(self._get_build_cellvalue(api, idx, "attrs")))
-      
+
       secrets_data = json.loads(self._get_build_cellvalue(api, idx, "secrets"))
       for secret in secrets_data:
         secret.pop("value", None)
@@ -161,8 +156,10 @@ class ProjectApiService(BravehubService):
       for key in [k for k in api.keys() if k.startswith(self._get_build_cellname(idx, "assets-"))]:
         key = key.decode(self._charset)
         curr_asset_id = key.replace("builds:{0}-assets-".format(idx), "")
-        asset_data = DynamicObject(json.loads(self._get_build_cellvalue(api, idx,
-                                              "assets-{0}".format(curr_asset_id))))
+        asset_data = json.loads(self._get_build_cellvalue(api, idx,
+                                                          "assets-{0}".format(curr_asset_id)))
+        asset_data = DynamicObject(asset_data)
+
         assets.append({
           "id": curr_asset_id,
           "downloadPath": asset_data.download_path,
@@ -185,7 +182,7 @@ class ProjectApiService(BravehubService):
 
       builds.append({
         "id": build_attrs.id,
-        "build": idx, 
+        "build": idx,
         "description": build_attrs.description,
         "configuration": {
           "secrets": secrets_data,
@@ -206,6 +203,7 @@ class ProjectApiService(BravehubService):
 
     builds.sort(key=lambda item: item["build"], reverse=True)
 
+
     return {
       "id": api_id,
       "path": api[b"attrs:path"].decode(self._charset),
@@ -213,6 +211,7 @@ class ProjectApiService(BravehubService):
         "id": project_id,
         "name": api[b"project:name"].decode(self._charset)
       },
+      "exposedPorts": json.loads(api[b"attrs:ports"].decode(self._charset)),
       "builds": builds
     }
 
@@ -237,16 +236,19 @@ class ProjectApiService(BravehubService):
         b"attrs:state": b"deleted"
       })
 
-  def get_nondeleted_api(self, project_id, api_id):
+  def get_nondeleted_api(self, project_id, api_id): #pylint: disable=missing-docstring
     with self._conn_pool.connection() as connection:
       apis_tbl = connection.table("apis")
       api = apis_tbl.row(api_id)
 
+      self._is_deleted(api, project_id)
+
+    return api
+
+  def _is_deleted(self, api, project_id): #pylint: disable=no-self-use
     if not api or api[b"project:id"] != project_id or \
       (b"attrs:state" in api.keys() and api[b"attrs:state"] == b"deleted"):
       raise BravehubNotFoundException()
-
-    return api
 
   def _get_build_cellname(self, build_num, cell_name):
     return bytes("builds:{0}-{1}".format(build_num, cell_name), self._charset)
@@ -257,7 +259,7 @@ class ProjectApiService(BravehubService):
     try:
       return api[build_cell_name].decode(self._charset)
     except KeyError:
-      None
+      return None
 
   def _get_api_location(self, project_id, api_id): # pylint: disable=no-self-use
     from src import API_MAJOR_VERSION

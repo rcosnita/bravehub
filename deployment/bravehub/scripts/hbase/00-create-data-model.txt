@@ -39,6 +39,7 @@ put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "apis:4a674c39-
 
 create "bravehub:apis", "attrs", "project", "builds"
 put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "attrs:path", "/api/v1/news"
+put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "attrs:ports", "[ 80 ]"
 put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "project:id", "5cf47fb5-ab1e-485b-9934-3e8cd062487e"
 put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "project:name", "Project 1"
 put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-attrs", "{\"id\": \"bb30d77f-0f0f-49fb-9439-243448422ddb\", \"description\": \"The first working version of the news api.\"}"
@@ -52,9 +53,9 @@ put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d",
 put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", 
 "builds:1-env", "[{\"id\": \"c9e4cad2-113d-4711-b7a7-1059440c75e7\", \"key\": \"ENVIRONMENT\", \"value\": \"dev\"}, {\"id\": \"c9e4cad2-113d-4711-b7a7-1059440c75e9\", \"key\": \"S3_BINARIES_BUCKET\", \"value\": \"myapp-binaries-bucket\"}]"
 
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-assets-c9e4cad2-113d-4711-b7a7-1059440c75eg", "{\"download_path\": \"/configs/assets/c9e4cad2-113d-4711-b7a7-1059440c75eg/application.conf\",\"mount_path\": \"\/application.conf\"}"
+put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-assets-c9e4cad2-113d-4711-b7a7-1059440c75eg", "{\"download_path\": \"/projects/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/1/configs/assets/c9e4cad2-113d-4711-b7a7-1059440c75eg/configs/app-meta.json\",\"mount_path\": \"\/configs/app-meta.json\", \"file_size\": 48, \"md5sum\": \"0592e01af3690520f281be5291b663b1\"}"
 
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-droplet", "{\"id\": \"df3feba0-73cb-4f36-9455-039cd2a9d5bb\", \"download_path\": \"/droplets/df3feba0-73cb-4f36-9455-039cd2a9d5bb/droplet.tar.gz\", \"md5sum\": \"448a3849df8c839fe5d1c31de2427ab8\", \"file_size\": \"8589934592\"}"
+put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-droplet", "{\"id\": \"df3feba0-73cb-4f36-9455-039cd2a9d5bb\", \"download_path\": \"/projects/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/1/droplets/1.tar.gz\", \"md5sum\": \"6efc84ff2f55345b059806e1a1485e2b\", \"file_size\": \"207\"}"
 
 create "bravehub:apiinfrastructure", "attrs", "state"
 put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "attrs:entry_point", "java -jar myapp.jar"
@@ -64,5 +65,14 @@ put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state
 put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:deployed_date", "2017-08-11 15:00:00"
 put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:deployed_date_ts", 1502463600
 put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:desired_instances", 5
+
+create "bravehub:provisioningtasks", "attrs", "states"
+put "bravehub:provisioningtasks", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "states:9f0768f8-4c6e-4100-816c-5241d3f21d45", "{\"api_id\":\"4a674c39-f239-4717-a97e-983a201ece7d\", \"build_num\":1}"
+
+create "bravehub:provisioningmetaports", "attrs"
+put "bravehub:provisioningmetaports", "ba1f005d-99ab-4011-a51f-4202b5d0ec27-10000", "attrs:status", "free"
+put "bravehub:provisioningmetaports", "2b71ac92-49c5-4bbb-af52-4cfd7d7ea9ee-10001", "attrs:status", "free"
+
+create "bravehub:provisioningmetaportsmapping", "api"
 
 exit
