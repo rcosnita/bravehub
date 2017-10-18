@@ -1,0 +1,8 @@
+{
+  "name": "bravehub-express-app-sample",
+  "version": "1.0.0",
+  "description": "First app ever deployed on the bravehub platform.",
+  "dependencies": {
+    "express": "^4.16.2"
+  }
+}
