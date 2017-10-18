@@ -1,13 +1,18 @@
 version: '3'
+
+networks:
+  bravehub-overlay:
+    driver: bridge
+
 services:
   configuration-api.api.internal.bravehub-dev.com:
     build:
       context: .
       dockerfile: configuration-api/Dockerfile
     entrypoint:
-      - flask
-      - run
-      - --host=0.0.0.0
+      - sh
+      - "-c"
+      - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 0.1; done && flask run --host=0.0.0.0"
     environment:
       BRAVEHUB_DEBUG: 1
       BRAVEHUB_SUFFIX: "bravehub-dev.com"
@@ -22,6 +27,8 @@ services:
       - ./configuration-api:/root/configuration-api:consistent
       - ./bravehub_shared:/root/configuration-api/src/bravehub_shared:consistent
       - nas-storage:/root/nas
+    networks:
+      - bravehub-overlay
   logging-api.api.internal.bravehub-dev.com:
     build:
       context: .
@@ -40,24 +47,52 @@ services:
     volumes:
       - ./logging-api:/root/logging-api:consistent
       - ./bravehub_shared:/root/logging-api/src/bravehub_shared:consistent
+    networks:
+      - bravehub-overlay
   provisioning-api.api.internal.bravehub-dev.com:
     build:
       context: .
       dockerfile: provisioning-api/Dockerfile
     entrypoint:
-      - flask
-      - run
-      - --host=0.0.0.0
+      - sh
+      - "-c"
+      - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 0.1; done && flask run --host=0.0.0.0"
     environment:
       BRAVEHUB_SUFFIX: "bravehub-dev.com"
       FLASK_DEBUG: 1
       FLASK_APP: src/app.py
       PYTHONPATH: .:src
+      HBASE_THRIFT_API: hbase-thrift.api.internal.bravehub-dev.com
     ports:
       - "0.0.0.0:5020:5000"
     volumes:
       - ./provisioning-api:/root/provisioning-api:consistent
       - ./bravehub_shared:/root/provisioning-api/src/bravehub_shared:consistent
+    networks:
+      - bravehub-overlay
+  provisioner-api.api.internal.bravehub-dev.com:
+    build:
+      context: .
+      dockerfile: provisioning-api/Dockerfile
+    depends_on:
+      - hbase-thrift.api.internal.bravehub-dev.com
+    entrypoint:
+      - sh
+      - "-c"
+      - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 0.1; done && python3 src/provisioner/provisioner.py"
+    environment:
+      BRAVEHUB_SUFFIX: "bravehub-dev.com"
+      HBASE_THRIFT_API: hbase-thrift.api.internal.bravehub-dev.com
+      PYTHONPATH: .:src
+      ORCHESTRATOR_PROVIDER: src.provisioner.provider.DockerStandAlone
+      NAS_MOUNT: /root/nas
+    volumes:
+      - ./provisioning-api:/root/provisioning-api:consistent
+      - ./bravehub_shared:/root/provisioning-api/src/bravehub_shared:consistent
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - nas-storage:/root/nas
+    networks:
+      - bravehub-overlay
   zookeeper-1.api.internal.bravehub-dev.com:
     build: deployment/hadoop/zookeeper
     hostname: zookeeper-1.api.internal.bravehub-dev.com
@@ -68,6 +103,8 @@ services:
       ZOOKEEPER_CONFIG: "dGlja1RpbWU9MjAwMApkYXRhRGlyPS92YXIvem9va2VlcGVyCmNsaWVudFBvcnQ9MjE4MQphdXRvcHVyZ2Uuc25hcFJldGFpbkNvdW50PTMK"
     volumes:
       - hadoop-zk-storage:/var/zookeeper
+    networks:
+      - bravehub-overlay
   hbase-master-1.api.internal.bravehub-dev.com:
     build: deployment/hadoop/hbase
     depends_on:
@@ -82,6 +119,8 @@ services:
       HBASE_CMD: "./bin/hbase-daemon.sh --config conf foreground_start master"
     volumes:
       - hadoop-hbase-storage:/var/hbase
+    networks:
+      - bravehub-overlay
   hbase-master-2.api.internal.bravehub-dev.com:
     build: deployment/hadoop/hbase
     depends_on:
@@ -96,6 +135,8 @@ services:
       HBASE_CMD: "./bin/hbase-daemon.sh --config conf foreground_start master"
     volumes:
       - hadoop-hbase-storage:/var/hbase
+    networks:
+      - bravehub-overlay
   hbase-regionserver-1.api.internal.bravehub-dev.com:
     build: deployment/hadoop/hbase
     hostname: hbase-regionserver-1.api.internal.bravehub-dev.com
@@ -110,6 +151,8 @@ services:
       HBASE_CMD: "./bin/hbase-daemon.sh --config conf foreground_start regionserver"
     volumes:
       - hadoop-hbase-storage:/var/hbase
+    networks:
+      - bravehub-overlay
   hbase-regionserver-2.api.internal.bravehub-dev.com:
     build: deployment/hadoop/hbase
     hostname: hbase-regionserver-2.api.internal.bravehub-dev.com
@@ -124,6 +167,8 @@ services:
       HBASE_CMD: "./bin/hbase-daemon.sh --config conf foreground_start regionserver"
     volumes:
       - hadoop-hbase-storage:/var/hbase
+    networks:
+      - bravehub-overlay
   hbase-thrift.api.internal.bravehub-dev.com:
     build: deployment/hadoop/hbase
     hostname: hbase-thrift.api.internal.bravehub-dev.com
@@ -141,6 +186,8 @@ services:
       HBASE_CMD: "./bin/hbase-daemon.sh --config conf foreground_start thrift --port 9090 --infoport 9100"
     volumes:
       - hadoop-hbase-storage:/var/hbase
+    networks:
+      - bravehub-overlay
   bravehub-setup-database:
     build: deployment/bravehub
     depends_on:
@@ -154,6 +201,8 @@ services:
       SCRIPT_NAME: "~/scripts/hbase/00-create-data-model.txt"
     volumes:
       - ./deployment/bravehub/scripts:/root/scripts:ro
+    networks:
+      - bravehub-overlay
   bravehub-examples:
     build: deployment/examples
     depends_on:
@@ -164,6 +213,8 @@ services:
       DELAYED_START_MS: 10000
     volumes:
       - ./deployment/examples/python:/root/python:ro
+    networks:
+      - bravehub-overlay
   router.api.internal.bravehub-dev.com:
     build:
       context: load-balancer
@@ -172,10 +223,16 @@ services:
       - "0.0.0.0:80:8080"
     volumes:
       - ./load-balancer/config/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - bravehub-overlay
   nginx-sample-app.internal.bravehub-dev.com:
     image: nginx:1.13.5-alpine
+    networks:
+      - bravehub-overlay
   tomcat-sample-app.internal.bravehub-dev.com:
     image: tomcat:7.0.81-alpine
+    networks:
+      - bravehub-overlay
 volumes:
   hadoop-zk-storage: { }
   hadoop-hbase-storage: { }
