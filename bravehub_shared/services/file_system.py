@@ -1,8 +1,9 @@
-"""Provides the algorithms for working with binary content and persisting it to a filesystem.""" 
+"""Provides the algorithms for working with binary content and persisting it to a filesystem."""
 from abc import ABC, abstractmethod
 
 import hashlib
 import os
+import shutil
 
 class FileSystemAbstract(ABC):
   """Provides the contract for implementing custom file systems compatible with the platform."""
@@ -10,6 +11,11 @@ class FileSystemAbstract(ABC):
   @abstractmethod
   def store(self, file_name, stream, folder_path):
     """Stores the given file under the specified path."""
+    pass
+
+  @abstractmethod
+  def cp(self, file_path, new_file_path): #pylint: disable=invalid-name
+    """Copy a file path from one location to another."""
     pass
 
   @abstractmethod
@@ -37,6 +43,11 @@ class FileSystemAbstract(ABC):
     """Returns a file verification hash. This will usually be an md5 of the file content."""
     pass
 
+  @abstractmethod
+  def rmdir(self, folder_path):
+    """Recursively delete the given folder path."""
+    pass
+
   def split_file_path(self, file_path): # pylint: disable=no-self-use
     """Returns a tuple containing the folder path and file name components."""
 
@@ -44,6 +55,10 @@ class FileSystemAbstract(ABC):
     file_name = os.path.basename(file_path)
 
     return (folder_path, file_name)
+
+  def absolute_path(self, file_path): #pylint: disable=no-self-use
+    """Returns an absolute path which can be used."""
+    return file_path
 
 class LocalFileSystem(FileSystemAbstract):
   """Provides a very simple implementation which relies on a local file system or a NAS.
@@ -73,6 +88,15 @@ class LocalFileSystem(FileSystemAbstract):
           break
 
         file_output.write(buf)
+
+  def cp(self, file_path, new_file_path):
+    """We build the absolute paths and invoke the cp operation."""
+
+    old_file_path = self._get_full_path(file_path)
+    new_file_path = self._get_full_path(new_file_path)
+
+    os.makedirs(os.path.dirname(new_file_path), exist_ok=True) #pylint: disable=unexpected-keyword-arg
+    shutil.copy(old_file_path, new_file_path)
 
   def get(self, file_path):
     """We try to open the given file_path if it exists."""
@@ -117,6 +141,17 @@ class LocalFileSystem(FileSystemAbstract):
         code.update(buf)
 
       return code.hexdigest()
+
+  def absolute_path(self, file_path):
+    return self._get_full_path(file_path)
+
+  def rmdir(self, folder_path):
+    folder_path = self._get_full_path(folder_path)
+
+    try:
+      shutil.rmtree(folder_path)
+    except OSError:
+      pass
 
   def _get_full_path(self, file_path):
     if file_path.startswith("/") and len(file_path) > 1:

@@ -6,7 +6,8 @@ from bravehub_shared.exceptions.bravehub_exceptions import \
   BravehubDuplicateEntryException, BravehubNotFoundException
 from bravehub_shared.services.base_service import BravehubService
 from bravehub_shared.utils.dynamic_object import DynamicObject
-from bravehub_shared.utils.flask_response_generator import FlaskResponseGenerator
+from bravehub_shared.utils.flask_response_generator import \
+  FlaskResponseGenerator, PaginatedResponse
 
 class ProjectService(BravehubService):
   """Provides the validation and persistence logic required for projects management."""
@@ -40,14 +41,7 @@ class ProjectService(BravehubService):
 
       projects.append(project)
 
-    return {
-      "items": projects,
-      "startRecord": None,
-      "endRecord": None,
-      "previous": None,
-      "next": None,
-      "limit": None
-    }
+    return PaginatedResponse(items=projects)
 
   @FlaskResponseGenerator()
   def get_project(self, project_id):
@@ -86,16 +80,16 @@ class ProjectService(BravehubService):
     return None, 201, {"Location": self._get_location_header(project_id)}
 
   @FlaskResponseGenerator()
-  def update_project(self, project_id, project_data):
+  def update_project(self, project_id, project_data): #pylint: disable=missing-docstring
     owner_id = CURRENT_USER
     project_data = DynamicObject(project_data)
     self.get_nondeleted_project(project_id)
 
-    self._persist_project_data(project_data, owner_id, project_id) 
+    self._persist_project_data(project_data, owner_id, project_id)
     self._persist_project_to_owner(owner_id, project_id, project_data)
 
   @FlaskResponseGenerator()
-  def delete_project(self, project_id):
+  def delete_project(self, project_id): #pylint: disable=missing-docstring
     owner_id = bytes(CURRENT_USER, self._charset)
     self.get_nondeleted_project(project_id)
 
@@ -115,8 +109,8 @@ class ProjectService(BravehubService):
     with self._conn_pool.connection() as connection:
       project = connection.table(self.PROJECTS_TABLE)\
         .scan(row_start=project_id, row_stop=project_id,
-          filter="SingleColumnValueFilter('attrs','state',!=,'binary:deleted')",
-          limit=1)
+              filter="SingleColumnValueFilter('attrs','state',!=,'binary:deleted')",
+              limit=1)
 
     try:
       project_id, project = next(project)
@@ -163,6 +157,6 @@ class ProjectService(BravehubService):
       }
       owners_tbl.put(bytes(owner_id, self._charset), new_project)
 
-  def _get_location_header(self, project_id): # no-self-use
+  def _get_location_header(self, project_id): #pylint: disable=no-self-use
     from src import API_MAJOR_VERSION
     return "/v{0}/{1}/{2}".format(API_MAJOR_VERSION, "projects", project_id)

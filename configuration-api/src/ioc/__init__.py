@@ -28,7 +28,7 @@ class ConfigurationApiContainer(DeclarativeContainer): # pylint: disable=too-few
   })
 
   hbase_conn_pool = Object(happybase.ConnectionPool(size=300, host=api_meta.thrift_server,
-                                                    autoconnect=True, timeout=2000,
+                                                    autoconnect=False, timeout=2000,
                                                     table_prefix='bravehub',
                                                     table_prefix_separator=":"))
 
@@ -47,10 +47,11 @@ class ConfigurationApiContainer(DeclarativeContainer): # pylint: disable=too-few
                           project_service=project_service,
                           id_service=CoreContainer.id_service)
 
-  config_binaries_service = Singleton(ConfigBinariesService, flask_app=CoreContainer.config.flask_app,
-                              conn_pool=hbase_conn_pool,
-                              charset=CoreContainer.DEFAULT_CHARSET,
-                              file_system=CoreContainer.file_system,
-                              project_service=project_service,
-                              api_service=api_service,
-                              id_service=CoreContainer.id_service)
+  config_binaries_service = Singleton(ConfigBinariesService,
+                                      flask_app=CoreContainer.config.flask_app,
+                                      conn_pool=hbase_conn_pool,
+                                      charset=CoreContainer.DEFAULT_CHARSET,
+                                      file_system=CoreContainer.file_system,
+                                      project_service=project_service,
+                                      api_service=api_service,
+                                      id_service=CoreContainer.id_service)

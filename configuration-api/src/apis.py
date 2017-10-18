@@ -67,7 +67,8 @@ def manage_config_assets(project_id, api_id, build):
 @app.route("/v{0}/projects/<project_id>/apis/<api_id>/builds/<build>/configassets/<asset_id>"\
            .format(API_MAJOR_VERSION), methods=["GET", "PUT"])
 def manage_config_asset(project_id, api_id, build, asset_id):
-  """Provides the logic for managing an existing configuration asset identified by the given asset_id."""
+  """Provides the logic for managing an existing configuration asset identified by the
+  given asset_id."""
 
   content_type_err = _validate_content_type(request, CONFIGASSET_CONTENT_TYPE)
   if content_type_err:

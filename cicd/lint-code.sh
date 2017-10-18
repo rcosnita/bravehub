@@ -5,6 +5,9 @@ PROJECT_NAME=${1}
 WORKDIR=$(pwd)
 
 if [[ "${PROJECT_NAME}" != "load-balancer" ]]; then
+  python3 -m venv $(pwd)/venv
+  . venv/bin/activate
+  pip install pylint
   pylint bravehub_shared ${PROJECT_NAME}/src
 else
   cd load-balancer

@@ -5,8 +5,8 @@ class DynamicObject(dict):
   """Provides a simple wrapper which allows us to simulate an object based on the dictionary
   keys."""
 
-  def __init__(self, data):
-    super(DynamicObject, self).__init__()
+  def __init__(self, data=None):
+    super().__init__()
     self._data = data or {}
     self.update(self._data)
 

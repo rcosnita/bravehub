@@ -1,6 +1,6 @@
 """This module provides all the endpoints and resources supported by the configuration api."""
 
-from src import API_FULL_VERSION, API_MAJOR_VERSION
+from src import API_FULL_VERSION
 from src.app import app # pylint: disable=cyclic-import
 
 @app.route("/")

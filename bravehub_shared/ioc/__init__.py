@@ -19,7 +19,7 @@ class CoreContainer(DeclarativeContainer): # pylint: disable=too-few-public-meth
 
   DEFAULT_CHARSET = "utf-8"
 
-  file_system = Singleton(LocalFileSystem, mount_location=os.environ["NAS_MOUNT"])
+  file_system = Singleton(LocalFileSystem, mount_location=os.environ.get("NAS_MOUNT"))
   id_service = Singleton(IdGeneratorService, charset=DEFAULT_CHARSET)
 
 class ApiClientsContainer(DeclarativeContainer): # pylint: disable=too-few-public-methods
