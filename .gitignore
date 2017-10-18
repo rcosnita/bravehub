@@ -6,3 +6,4 @@ dist
 node_modules
 *.pyc
 .search-index
+*.tar.gz
