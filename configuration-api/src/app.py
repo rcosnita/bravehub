@@ -3,10 +3,13 @@
 import os
 
 from flask import Flask, send_file
+from flask_cors import CORS, cross_origin
+
 from bravehub_shared.ioc import CoreContainer
 from src.ioc import ConfigurationApiContainer
 
 app = Flask(__name__) # pylint: disable=invalid-name
+CORS(app)
 
 @app.before_first_request
 def init_app(): # pylint: disable=missing-docstring
