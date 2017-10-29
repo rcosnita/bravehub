@@ -183,7 +183,7 @@ services:
     env_file:
       - deployment/hadoop/hbase/conf/dev-hbase-environment.env
     environment:
-      HBASE_CMD: "./bin/hbase-daemon.sh --config conf foreground_start thrift --port 9090 --infoport 9100"
+      HBASE_CMD: "while ! nc -z hbase-master-1.api.internal.bravehub-dev.com 16000; do sleep 0.1; echo 'Waiting ...'; done && ./bin/hbase-daemon.sh --config conf foreground_start thrift --port 9090 --infoport 9100"
     volumes:
       - hadoop-hbase-storage:/var/hbase
     networks:
