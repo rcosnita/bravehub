@@ -15,4 +15,4 @@ ENTRYPOINT export JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk && \
     echo ${HBASE_SITE_CONFIG} | base64 -d > conf/hbase-site.xml && \
     echo ${HBASE_RS_CONFIG} | base64 -d > conf/regionservers && \
     sed -i "s@{{hbase.regionserver.hostname}}@$(hostname)@" conf/hbase-site.xml && \
-    ${HBASE_CMD}
+    bash -c "${HBASE_CMD}"
