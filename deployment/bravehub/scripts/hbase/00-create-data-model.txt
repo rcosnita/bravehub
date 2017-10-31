@@ -67,7 +67,7 @@ put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state
 put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:desired_instances", 5
 
 create "bravehub:provisioningtasks", "attrs", "states"
-put "bravehub:provisioningtasks", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "states:9f0768f8-4c6e-4100-816c-5241d3f21d45", "{\"api_id\":\"4a674c39-f239-4717-a97e-983a201ece7d\", \"build_num\":1}"
+# put "bravehub:provisioningtasks", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "states:9f0768f8-4c6e-4100-816c-5241d3f21d45", "{\"api_id\":\"4a674c39-f239-4717-a97e-983a201ece7d\", \"build_num\":1}"
 
 create "bravehub:provisioningmetaports", "attrs"
 put "bravehub:provisioningmetaports", "ba1f005d-99ab-4011-a51f-4202b5d0ec27-10000", "attrs:status", "free"

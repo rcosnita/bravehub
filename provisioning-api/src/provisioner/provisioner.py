@@ -119,7 +119,7 @@ class Provisioner(object):
 
     try:
       image_tag = self._image_builder.build_image(image_ctx)
-      runner_ctx = ImageRunnerContext(image_tag, api_data.exposedPorts)
+      runner_ctx = ImageRunnerContext(image_tag, api_data.body.exposedPorts)
       self._image_runner.run_image(image_ctx, runner_ctx)
     except Exception as ex:
       # TODO(cosnita) add proper handling

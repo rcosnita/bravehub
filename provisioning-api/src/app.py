@@ -12,8 +12,8 @@ def resolve_domains():
   body = json.dumps({
     # "workerDomain": "tomcat-sample-app.internal.bravehub-dev.com",
     # "workerPort": 8080
-    "workerDomain": "192.168.128.1",
-    "workerPort": 10000
+    "workerDomain": "172.18.0.1",
+    "workerPort": 10001
   })
 
   return app.response_class(response=body,
