@@ -10,3 +10,6 @@
 [submodule "load-balancer/third-party/cpp-core-guidelines"]
 	path = load-balancer/third-party/cpp-core-guidelines
 	url = https://github.com/isocpp/CppCoreGuidelines.git
+[submodule "configuration-app/third-party/tarballjs"]
+	path = configuration-app/third-party/tarballjs
+	url = https://github.com/ankitrohatgi/tarballjs.git

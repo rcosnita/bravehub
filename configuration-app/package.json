@@ -1,0 +1,23 @@
+{
+  "name": "bravehub-configuration-app",
+  "version": "0.1.0",
+  "description": "Bravehub application which allows users to configure their projects and APIs.",
+  "authors": [
+    "Radu Viorel Cosnita",
+    "Alexandru Bularca",
+    "Alin Turlac"
+  ],
+  "devDependencies": {
+    "polymer-cli": "^1.5.7",
+    "eslint": "^3.19.0",
+    "eslint-config-google": "^0.7.0",
+    "eslint-plugin-html": "^2.0.0"
+  },
+  "scripts": {
+    "lint": "npm run lint:javascript",
+    "lint:javascript": "eslint src --ext js,html --ignore-path .gitignore",
+    "start": "polymer serve --hostname 0.0.0.0 --port 8080",
+    "test": "polymer test",
+    "bundle:app": "polymer build # test that psk builds without error with the CLI"
+  }
+}
