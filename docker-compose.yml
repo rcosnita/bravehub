@@ -29,6 +29,14 @@ services:
       - nas-storage:/root/nas
     networks:
       - bravehub-overlay
+  configuration-app.api.internal.bravehub-dev.com:
+    build: configuration-app
+    ports:
+      - "0.0.0.0:9000:8080"
+    volumes:
+      - ./configuration-app/src:/root/src:consistent
+    networks:
+      - bravehub-overlay
   logging-api.api.internal.bravehub-dev.com:
     build:
       context: .
