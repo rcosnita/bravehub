@@ -9,7 +9,7 @@ from bravehub_shared.ioc import CoreContainer
 from src.ioc import ConfigurationApiContainer
 
 app = Flask(__name__) # pylint: disable=invalid-name
-CORS(app)
+CORS(app, expose_headers="Location")
 
 @app.before_first_request
 def init_app(): # pylint: disable=missing-docstring

@@ -1,0 +1,14 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymer/lib/elements/dom-repeat.html">
+<link rel="import" href="../bower_components/polymer/lib/elements/dom-if.html">
+
+<dom-module id="configuration-upload-file">
+  <template>
+    <template is="dom-if" if="{{folderUpload}}">
+      <p>{{label}}</p>
+      <input type="file" on-change="_selectFolder" webkitdirectory mozdirectory msdirectory odirectory directory multiple="multiple" />
+    </template>
+  </template>
+
+  <script type="text/javascript" src="js/configuration-upload-file.js"></script>
+</dom-module>
