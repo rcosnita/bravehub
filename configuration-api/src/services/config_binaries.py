@@ -9,6 +9,7 @@ from bravehub_shared.exceptions.bravehub_exceptions import \
 from bravehub_shared.services.base_service import BravehubService
 from bravehub_shared.utils.dynamic_object import DynamicObject
 from bravehub_shared.utils.flask_response_generator import FlaskResponseGenerator
+from bravehub_shared.utils.hbase_connection_manager import HbaseConnectionManager
 
 class ConfigBinariesService(BravehubService):
   """Provides the logic for managing configuration binary content and its metadata."""
@@ -24,7 +25,8 @@ class ConfigBinariesService(BravehubService):
     self._id_service = id_service
 
   @FlaskResponseGenerator()
-  def save_droplet(self, project_id, api_id, build, content):
+  @HbaseConnectionManager()
+  def save_droplet(self, project_id, api_id, build, content, hbase_manager):
     """Stores the given binary content and its generated metadata."""
 
     self._validate_has_build(project_id, api_id, build)
@@ -36,16 +38,16 @@ class ConfigBinariesService(BravehubService):
 
     self._file_system.store(file_name=droplet_name, stream=content, folder_path=droplet_path)
 
-    with self._conn_pool.connection() as conn:
-      apis_tbl = conn.table("apis")
-      apis_tbl.put(bytes(api_id, self._charset), {
-        bytes("builds:{0}-droplet".format(build), self._charset): bytes(json.dumps({
-          "id": droplet_id,
-          "download_path": droplet_full_path,
-          "md5sum": self._file_system.crc(droplet_full_path),
-          "file_size": self._file_system.size(droplet_full_path)
-        }), self._charset)
-      })
+    conn = hbase_manager.connection
+    apis_tbl = conn.table("apis")
+    apis_tbl.put(bytes(api_id, self._charset), {
+      bytes("builds:{0}-droplet".format(build), self._charset): bytes(json.dumps({
+        "id": droplet_id,
+        "download_path": droplet_full_path,
+        "md5sum": self._file_system.crc(droplet_full_path),
+        "file_size": self._file_system.size(droplet_full_path)
+      }), self._charset)
+    })
 
     return self._api_service.get_api(project_id, api_id, int(build))
 
@@ -62,7 +64,9 @@ class ConfigBinariesService(BravehubService):
     return self._file_system.get(file_path=droplet.download_path)
 
   @FlaskResponseGenerator()
-  def save_configasset(self, project_id, api_id, build, mount_path, content, asset_id=None): #pylint: disable=too-many-arguments,too-many-locals
+  @HbaseConnectionManager()
+  def save_configasset(self, project_id, api_id, build, mount_path, content, asset_id=None, #pylint: disable=too-many-arguments,too-many-locals
+                       hbase_manager=None):
     """Save the given configuration asset."""
 
     (project, api, asset) = self._validate_has_asset(project_id, api_id, build, asset_id) #pylint: disable=unused-variable
@@ -83,16 +87,16 @@ class ConfigBinariesService(BravehubService):
 
     download_path = os.path.join(folder_path, file_name)
 
-    with self._conn_pool.connection() as conn:
-      apis_tbl = conn.table("apis")
-      apis_tbl.put(bytes(api_id, self._charset), {
-        bytes(asset_cell): bytes(json.dumps({
-          "download_path": download_path,
-          "mount_path": mount_path,
-          "file_size": self._file_system.size(download_path),
-          "md5sum": self._file_system.crc(download_path)
-        }), self._charset)
-      })
+    conn = hbase_manager.connection
+    apis_tbl = conn.table("apis")
+    apis_tbl.put(bytes(api_id, self._charset), {
+      bytes(asset_cell): bytes(json.dumps({
+        "download_path": download_path,
+        "mount_path": mount_path,
+        "file_size": self._file_system.size(download_path),
+        "md5sum": self._file_system.crc(download_path)
+      }), self._charset)
+    })
 
     location = self._get_configasset_location(project_id, api_id, build, asset_id)
     return None, 201, {"Location": location}
