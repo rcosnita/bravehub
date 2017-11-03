@@ -17,3 +17,7 @@ class BravehubService(object): # pylint: disable=too-few-public-methods
   @property
   def flask_app(self): # pylint: disable=missing-docstring
     return self._flask_app
+
+  @property
+  def conn_pool(self): # pylint: disable=missing-docstring
+    return self._conn_pool
