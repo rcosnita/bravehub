@@ -28,7 +28,7 @@ class ConfigurationApiContainer(DeclarativeContainer): # pylint: disable=too-few
   })
 
   hbase_conn_pool = Object(happybase.ConnectionPool(size=300, host=api_meta.thrift_server,
-                                                    autoconnect=False, timeout=2000,
+                                                    autoconnect=True, timeout=2000,
                                                     table_prefix='bravehub',
                                                     table_prefix_separator=":"))
 

@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 import json
 
+from bravehub_shared.utils.hbase_connection_manager import HbaseConnectionManager
 from bravehub_shared.utils.row_locker import OptimisticLocker
 from src.provisioner.image_builder import ImageBuilderContext
 
@@ -28,6 +29,10 @@ class ImageRunner(ABC):
   def __init__(self, hbase_conn_pool, default_charset):
     self._hbase_conn_pool = hbase_conn_pool
     self._default_charset = default_charset
+
+  @property
+  def conn_pool(self): # pylint: disable=missing-docstring
+    return self._hbase_conn_pool
 
   def run_image(self, image_ctx, runner_ctx):
     public_ports = runner_ctx.public_ports
@@ -60,47 +65,49 @@ class ImageRunner(ABC):
     """Provides the logic for deploying the image on the underlining infrastructure."""
     pass
 
-  def _reserve_next_free_port(self, image_ctx):
+  @HbaseConnectionManager()
+  def _reserve_next_free_port(self, image_ctx, hbase_manager=None):
     """It relies on the hbase provisioningmetaports table in order to obtain an available port. It
     uses an optimistic locking strategy in order to solve the potential concurrency issues."""
 
-    with self._hbase_conn_pool.connection() as conn:
-      ports_tbl = conn.table("provisioningmetaports")
+    conn = hbase_manager.connection
+    ports_tbl = conn.table("provisioningmetaports")
 
-      port_record = ports_tbl.scan(filter="SingleColumnValueFilter('attrs','status',=,'binary:free')",
-                                   limit=1)
+    port_record = ports_tbl.scan(filter="SingleColumnValueFilter('attrs','status',=,'binary:free')",
+                                 limit=1)
 
-      try:
-        port_record = next(port_record)
-      except StopIteration:
-        # TODO(cosnita) implement proper signaling for missing ports
-        raise ValueError("No free ports ... Go away ...")
+    try:
+      port_record = next(port_record)
+    except StopIteration:
+      # TODO(cosnita) implement proper signaling for missing ports
+      raise ValueError("No free ports ... Go away ...")
 
-      port_id = port_record[0]
-      port_id_str = port_id.decode(self._default_charset)
+    port_id = port_record[0]
+    port_id_str = port_id.decode(self._default_charset)
 
-      # We know that the format is guid-port -> used for making sure we don't end up with a hot
-      # region.
-      port = port_id_str[port_id_str.rfind("-") + 1:]
-      expected_status = bytes(image_ctx.api_id, self._default_charset)
+    # We know that the format is guid-port -> used for making sure we don't end up with a hot
+    # region.
+    port = port_id_str[port_id_str.rfind("-") + 1:]
+    expected_status = bytes(image_ctx.api_id, self._default_charset)
 
-      with OptimisticLocker(self._hbase_conn_pool, self._default_charset, "provisioningmetaports", port_id,
-                            when_acquired=lambda conn, tbl: tbl.put(port_id, { b"attrs:status": expected_status })) as lock:
-        if not lock.locked:
-          return
+    with OptimisticLocker(self._hbase_conn_pool, self._default_charset, "provisioningmetaports", port_id,
+                          when_acquired=lambda conn, tbl: tbl.put(port_id, { b"attrs:status": expected_status })) as lock:
+      if not lock.locked:
+        return
 
-        return int(port)
+      return int(port)
 
-  def _save_port_mappings(self, image_ctx, port_mappings):
+  @HbaseConnectionManager()
+  def _save_port_mappings(self, image_ctx, port_mappings, hbase_manager=None):
     """Stores the association between apis and reserved ports. This actually accelerates the provisioning
     api responsible for retrieving the location of a specific domain and path."""
 
-    with self._hbase_conn_pool.connection() as conn:
-      mapping_tbl = conn.table("provisioningmetaportsmapping")
-      mapping_tbl.put(bytes(image_ctx.api_id, self._default_charset),
-                      {
-                        b"api:ports": bytes(json.dumps(port_mappings), self._default_charset)
-                      })
+    conn = hbase_manager.connection
+    mapping_tbl = conn.table("provisioningmetaportsmapping")
+    mapping_tbl.put(bytes(image_ctx.api_id, self._default_charset),
+                    {
+                      b"api:ports": bytes(json.dumps(port_mappings), self._default_charset)
+                    })
 
 class DockerEngineImageRunner(ImageRunner):
   """Provides an implementation for the docker engine. This is designed to work on development
