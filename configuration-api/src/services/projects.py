@@ -8,6 +8,7 @@ from bravehub_shared.services.base_service import BravehubService
 from bravehub_shared.utils.dynamic_object import DynamicObject
 from bravehub_shared.utils.flask_response_generator import \
   FlaskResponseGenerator, PaginatedResponse
+from bravehub_shared.utils.hbase_connection_manager import HbaseConnectionManager
 
 class ProjectService(BravehubService):
   """Provides the validation and persistence logic required for projects management."""
@@ -20,7 +21,8 @@ class ProjectService(BravehubService):
     self._id_service = id_service
 
   @FlaskResponseGenerator()
-  def list_projects(self):
+  @HbaseConnectionManager()
+  def list_projects(self, hbase_manager=None):
     """Obtains a list of projects from the system. We do not support filtering, ordering and
     pagination at the moment."""
 
@@ -28,9 +30,8 @@ class ProjectService(BravehubService):
 
     owner_id = CURRENT_USER
 
-    with self._conn_pool.connection() as connection:
-      owners_tbl = connection.table(self.OWNERS_TABLE)
-      owner = owners_tbl.row(bytes(CURRENT_USER, self._charset))
+    owners_tbl = hbase_manager.connection.table(self.OWNERS_TABLE)
+    owner = owners_tbl.row(bytes(CURRENT_USER, self._charset))
 
     for key in [k for k in owner.keys() if k.startswith(b"projects:")]:
       data = owner[key]
@@ -89,28 +90,30 @@ class ProjectService(BravehubService):
     self._persist_project_to_owner(owner_id, project_id, project_data)
 
   @FlaskResponseGenerator()
-  def delete_project(self, project_id): #pylint: disable=missing-docstring
+  @HbaseConnectionManager()
+  def delete_project(self, project_id, hbase_manager=None): #pylint: disable=missing-docstring
     owner_id = bytes(CURRENT_USER, self._charset)
     self.get_nondeleted_project(project_id)
 
-    with self._conn_pool.connection() as connection:
-      owner_proj_col = "projects:{0}".format(project_id)
-      connection.table(self.OWNERS_TABLE).delete(owner_id, [bytes(owner_proj_col, self._charset)])
-      connection.table(self.PROJECTS_TABLE).put(project_id, {
-        b"attrs:state": b"deleted"
-      })
+    connection = hbase_manager.connection
+    owner_proj_col = "projects:{0}".format(project_id)
+    connection.table(self.OWNERS_TABLE).delete(owner_id, [bytes(owner_proj_col, self._charset)])
+    connection.table(self.PROJECTS_TABLE).put(project_id, {
+      b"attrs:state": b"deleted"
+    })
 
-  def get_nondeleted_project(self, project_id):
+  @HbaseConnectionManager()
+  def get_nondeleted_project(self, project_id, hbase_manager=None):
     """Provides the mechanism for obtaining a project uniquely identified by the given identifier.
     In case the project has been deleted, it will not be returned to the client."""
     project = None
     project_id = bytes(project_id, self._charset)
 
-    with self._conn_pool.connection() as connection:
-      project = connection.table(self.PROJECTS_TABLE)\
-        .scan(row_start=project_id, row_stop=project_id,
-              filter="SingleColumnValueFilter('attrs','state',!=,'binary:deleted')",
-              limit=1)
+    connection = hbase_manager.connection
+    project = connection.table(self.PROJECTS_TABLE)\
+      .scan(row_start=project_id, row_stop=project_id,
+            filter="SingleColumnValueFilter('attrs','state',!=,'binary:deleted')",
+            limit=1)
 
     try:
       project_id, project = next(project)
@@ -122,10 +125,11 @@ class ProjectService(BravehubService):
 
     return project
 
-  def _get_existing_project(self, owner_id, project_name):
-    with self._conn_pool.connection() as connection:
-      projects_tbl = connection.table(self.OWNERS_TABLE)
-      project = projects_tbl.row(bytes(owner_id, self._charset))
+  @HbaseConnectionManager()
+  def _get_existing_project(self, owner_id, project_name, hbase_manager=None):
+    connection = hbase_manager.connection
+    projects_tbl = connection.table(self.OWNERS_TABLE)
+    project = projects_tbl.row(bytes(owner_id, self._charset))
 
     for key in [k for k in project.keys() if k.startswith(b"projects:")]:
       project_id = key.decode(self._charset).replace("projects:", "")
@@ -134,28 +138,30 @@ class ProjectService(BravehubService):
       if project_data["name"].lower() == project_name.lower():
         return project_id, DynamicObject(project_data)
 
-  def _persist_project_data(self, project_data, owner_id, project_id=None):
+  @HbaseConnectionManager()
+  def _persist_project_data(self, project_data, owner_id, project_id=None, hbase_manager=None):
     project_id = project_id or self._id_service.generate()
 
-    with self._conn_pool.connection() as connection:
-      projects_tbl = connection.table(self.PROJECTS_TABLE)
-      projects_tbl.put(bytes(project_id, self._charset), {
-        b"attrs:name": bytes(project_data.name, self._charset),
-        b"attrs:description": bytes(project_data.description, self._charset),
-        b"attrs:domain": bytes(project_data.domain, self._charset),
-        b"owner:id": bytes(owner_id, self._charset)
-      })
+    connection = hbase_manager.connection
+    projects_tbl = connection.table(self.PROJECTS_TABLE)
+    projects_tbl.put(bytes(project_id, self._charset), {
+      b"attrs:name": bytes(project_data.name, self._charset),
+      b"attrs:description": bytes(project_data.description, self._charset),
+      b"attrs:domain": bytes(project_data.domain, self._charset),
+      b"owner:id": bytes(owner_id, self._charset)
+    })
 
     return project_id
 
-  def _persist_project_to_owner(self, owner_id, project_id, project_data):
-    with self._conn_pool.connection() as connection:
-      owners_tbl = connection.table(self.OWNERS_TABLE)
-      new_project = {
-        bytes("projects:{0}".format(project_id), self._charset): \
-          bytes(json.dumps(project_data), self._charset)
-      }
-      owners_tbl.put(bytes(owner_id, self._charset), new_project)
+  @HbaseConnectionManager()
+  def _persist_project_to_owner(self, owner_id, project_id, project_data, hbase_manager=None):
+    connection = hbase_manager.connection
+    owners_tbl = connection.table(self.OWNERS_TABLE)
+    new_project = {
+      bytes("projects:{0}".format(project_id), self._charset): \
+        bytes(json.dumps(project_data), self._charset)
+    }
+    owners_tbl.put(bytes(owner_id, self._charset), new_project)
 
   def _get_location_header(self, project_id): #pylint: disable=no-self-use
     from src import API_MAJOR_VERSION

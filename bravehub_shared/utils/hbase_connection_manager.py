@@ -4,7 +4,10 @@ import time
 
 class HbaseConnectionManager(object): # pylint: disable=too-few-public-methods
   """Sends a ping before actually executing the inner code. In case an exception
-  appears it retries for several times"""
+  appears it retries for several times (equals the size of the connection pool).
+
+  In order for this decorator to work each self argument must provide a conn_pool
+  property."""
 
   class HbaseConnection(object): # pylint: disable=too-few-public-methods
     """Provides an extensible model for injecting hbase valid connections into decorated methods."""

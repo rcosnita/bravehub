@@ -3,7 +3,7 @@
 import os
 
 from flask import Flask, send_file
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 
 from bravehub_shared.ioc import CoreContainer
 from src.ioc import ConfigurationApiContainer

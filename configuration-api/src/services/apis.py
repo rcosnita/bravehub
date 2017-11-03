@@ -6,6 +6,7 @@ from bravehub_shared.exceptions.bravehub_exceptions import \
 from bravehub_shared.services.base_service import BravehubService
 from bravehub_shared.utils.dynamic_object import DynamicObject
 from bravehub_shared.utils.flask_response_generator import FlaskResponseGenerator, PaginatedResponse
+from bravehub_shared.utils.hbase_connection_manager import HbaseConnectionManager
 
 class ProjectApiService(BravehubService):
   """Provides the services which offers all management methods for apis."""
@@ -37,7 +38,8 @@ class ProjectApiService(BravehubService):
     return PaginatedResponse(items=apis)
 
   @FlaskResponseGenerator()
-  def create_api(self, project_id, api_data): #pylint: disable=too-many-locals
+  @HbaseConnectionManager()
+  def create_api(self, project_id, api_data, hbase_manager=None): #pylint: disable=too-many-locals
     """Creates a new API and associates it with the given project."""
 
     project = self._project_service.get_nondeleted_project(project_id)
@@ -64,30 +66,31 @@ class ProjectApiService(BravehubService):
     for env in secrets_data:
       env.update({"id": self._id_service.generate()})
 
-    with self._conn_pool.connection() as connection:
-      apis_tbl = connection.table("apis")
-      apis_tbl.put(api_id, {
-        b"project:id": bytes(project_id, self._charset),
-        b"project:name": project[b"attrs:name"],
-        b"attrs:path": bytes(api_path, self._charset),
-        b"attrs:ports": bytes(json.dumps(api_ports), self._charset),
-        b"builds:counter": b"1",
-        b"builds:1-attrs": bytes(json.dumps(build_attrs), self._charset),
-        b"builds:1-secrets": bytes(json.dumps(secrets_data), self._charset),
-        b"builds:1-env": bytes(json.dumps(environment_data), self._charset)
-      })
+    connection = hbase_manager.connection
+    apis_tbl = connection.table("apis")
+    apis_tbl.put(api_id, {
+      b"project:id": bytes(project_id, self._charset),
+      b"project:name": project[b"attrs:name"],
+      b"attrs:path": bytes(api_path, self._charset),
+      b"attrs:ports": bytes(json.dumps(api_ports), self._charset),
+      b"builds:counter": b"1",
+      b"builds:1-attrs": bytes(json.dumps(build_attrs), self._charset),
+      b"builds:1-secrets": bytes(json.dumps(secrets_data), self._charset),
+      b"builds:1-env": bytes(json.dumps(environment_data), self._charset)
+    })
 
-      projects_tbl = connection.table("projects")
-      projects_tbl.put(bytes(project_id, self._charset), {
-        "apis:{0}".format(api_id.decode(self._charset)): bytes(json.dumps({
-          "path": api_data.path
-        }), self._charset)
-      })
+    projects_tbl = connection.table("projects")
+    projects_tbl.put(bytes(project_id, self._charset), {
+      "apis:{0}".format(api_id.decode(self._charset)): bytes(json.dumps({
+        "path": api_data.path
+      }), self._charset)
+    })
 
     return None, 201, {"Location": self._get_api_location(project_id, api_id.decode(self._charset))}
 
   @FlaskResponseGenerator()
-  def update_api(self, project_id, api_id, api_data): #pylint: disable=too-many-locals
+  @HbaseConnectionManager()
+  def update_api(self, project_id, api_id, api_data, hbase_manager=None): #pylint: disable=too-many-locals
     """Provides the algorithm for updating an existing api definition."""
 
     project = self._project_service.get_nondeleted_project(project_id)
@@ -101,38 +104,38 @@ class ProjectApiService(BravehubService):
 
     builds_data = api_data.builds
 
-    with self._conn_pool.connection() as connection:
-      apis_tbl = connection.table("apis")
+    connection = hbase_manager.connection
+    apis_tbl = connection.table("apis")
 
-      for build_data in builds_data:
-        build_data = DynamicObject(build_data)
-        build_num = build_data.build
-        existing_build = self._get_build_cellvalue(api, build_num, "attrs")
-        build_id = None
-        if not existing_build:
-          build_id = self._id_service.generate()
+    for build_data in builds_data:
+      build_data = DynamicObject(build_data)
+      build_num = build_data.build
+      existing_build = self._get_build_cellvalue(api, build_num, "attrs")
+      build_id = None
+      if not existing_build:
+        build_id = self._id_service.generate()
 
-        build_attrs = {
-          "id": build_id or json.loads(existing_build)["id"],
-          "description": build_data.description
-        }
+      build_attrs = {
+        "id": build_id or json.loads(existing_build)["id"],
+        "description": build_data.description
+      }
 
-        build_config = build_data.configuration
-        secrets_data = build_config.secrets
-        environment_data = build_config.environment
+      build_config = build_data.configuration
+      secrets_data = build_config.secrets
+      environment_data = build_config.environment
 
-        apis_tbl.put(api_id, {
-          b"project:id": bytes(project_id, self._charset),
-          b"project:name": project[b"attrs:name"],
-          b"builds:counter": bytes(str(len(builds_data)), self._charset),
-          b"attrs:path": bytes(api_path, self._charset),
-          self._get_build_cellname(build_num, "attrs"): \
-            bytes(json.dumps(build_attrs), self._charset),
-          self._get_build_cellname(build_num, "secrets"): \
-            bytes(json.dumps(secrets_data), self._charset),
-          self._get_build_cellname(build_num, "env"): \
-            bytes(json.dumps(environment_data), self._charset)
-        })
+      apis_tbl.put(api_id, {
+        b"project:id": bytes(project_id, self._charset),
+        b"project:name": project[b"attrs:name"],
+        b"builds:counter": bytes(str(len(builds_data)), self._charset),
+        b"attrs:path": bytes(api_path, self._charset),
+        self._get_build_cellname(build_num, "attrs"): \
+          bytes(json.dumps(build_attrs), self._charset),
+        self._get_build_cellname(build_num, "secrets"): \
+          bytes(json.dumps(secrets_data), self._charset),
+        self._get_build_cellname(build_num, "env"): \
+          bytes(json.dumps(environment_data), self._charset)
+      })
 
     return None, 204, {}
 
@@ -216,7 +219,8 @@ class ProjectApiService(BravehubService):
     }
 
   @FlaskResponseGenerator()
-  def delete_api(self, project_id, api_id):
+  @HbaseConnectionManager()
+  def delete_api(self, project_id, api_id, hbase_manager=None):
     """Provides the logic for deleting an existing API."""
 
     self._project_service.get_nondeleted_project(project_id)
@@ -227,21 +231,22 @@ class ProjectApiService(BravehubService):
 
     self.get_nondeleted_api(project_id, api_id)
 
-    with self._conn_pool.connection() as connection:
-      api_tbl = connection.table("apis")
-      projects_tbl = connection.table("projects")
+    connection = hbase_manager.connection
+    api_tbl = connection.table("apis")
+    projects_tbl = connection.table("projects")
 
-      projects_tbl.delete(project_id, [bytes(proj_api_col, self._charset)])
-      api_tbl.put(api_id, {
-        b"attrs:state": b"deleted"
-      })
+    projects_tbl.delete(project_id, [bytes(proj_api_col, self._charset)])
+    api_tbl.put(api_id, {
+      b"attrs:state": b"deleted"
+    })
 
-  def get_nondeleted_api(self, project_id, api_id): #pylint: disable=missing-docstring
-    with self._conn_pool.connection() as connection:
-      apis_tbl = connection.table("apis")
-      api = apis_tbl.row(api_id)
+  @HbaseConnectionManager()
+  def get_nondeleted_api(self, project_id, api_id, hbase_manager=None): #pylint: disable=missing-docstring
+    connection = hbase_manager.connection
+    apis_tbl = connection.table("apis")
+    api = apis_tbl.row(api_id)
 
-      self._is_deleted(api, project_id)
+    self._is_deleted(api, project_id)
 
     return api
 
