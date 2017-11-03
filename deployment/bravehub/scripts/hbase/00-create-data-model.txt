@@ -12,6 +12,9 @@
 ##############################################################################
 create_namespace "bravehub"
 
+create "bravehub:healthchecks", "attrs"
+put "bravehub:healthchecks", "1", "attrs:status", "works"
+
 create "bravehub:projectowners", "attrs", "projects"
 put "bravehub:projectowners", "3746656e-c319-447f-9fc1-2f85f1cbcd33", "attrs:email", "radu.cosnita@gmail.com"
 put "bravehub:projectowners", "3746656e-c319-447f-9fc1-2f85f1cbcd33", "attrs:authentication_provider", "github"
