@@ -1,3 +1,4 @@
+"use strict";
 class ConfigurationCreateProjects extends Polymer.Element {
   static get is() { return "configuration-create-projects"; }
 
