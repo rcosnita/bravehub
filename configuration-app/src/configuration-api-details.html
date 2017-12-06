@@ -3,11 +3,17 @@
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../bower_components/paper-input/paper-textarea.html">
 
+<link rel="import" href="configuration-upload-file.html">
+
 <dom-module id="configuration-api-details">
   <template>
     <style>
     paper-button {
       background-color: var(--app-primary-color);
+    }
+
+    :host {
+      background-color: var(--api-details-background);
     }
 
     .builds-section {
@@ -38,13 +44,20 @@
             </iron-form>
           </div>
 
+          <template is="dom-if" if="{{isNew}}">
+            <configuration-upload-file folder-upload archive archive-result="{{droplet}}" label="Droplet content"></configuration-upload-file>
+
+            <configuration-upload-file folder-upload label="Config files" files-content="{{configFiles}}"></configuration-upload-file>
+          </template>
+
           <!-- <paper-button raised>Update</paper-button> -->
+          <template is="dom-if" if="{{projectModel}}">
+            <paper-button raised on-click="createApi">Create</paper-button>
+          </template>
         </form>
       </iron-form>
     </template>
   </template>
 
-  <script type="text/javascript" src="../bower_components/rxjs/dist/rx.all.js"></script>
-  <script type="text/javascript" src="../bower_components/rx-dom/dist/rx.dom.js"></script>
-  <script src="js/configuration-api-details.js"></script>
+  <script type="module" src="js/configuration-api-details.js"></script>
 </dom-module>
