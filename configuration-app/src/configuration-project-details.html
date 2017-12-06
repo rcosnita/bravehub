@@ -1,0 +1,22 @@
+<link rel="import" href="../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-input/paper-textarea.html">
+
+<script type="text/javascript" src="js/constants.js"></script>
+
+<dom-module id="configuration-project-details">
+  <template>
+    <iron-form>
+      <form>
+        <paper-input label="name" required value="{{projectModel.name}}"></paper-input>
+        <paper-input label="domain" required value="{{projectModel.domain}}"></paper-input>
+        <paper-textarea label="description" required value="{{projectModel.description}}"></paper-textarea>
+
+        <paper-button raised on-click="createProject">Create</paper-button>
+      </form>
+    </iron-form>
+  </template>
+
+  <script type="module" src="js/configuration-project-details.js"></script>
+</dom-module>
