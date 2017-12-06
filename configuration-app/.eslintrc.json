@@ -1,7 +1,8 @@
 {
   "extends": ["eslint:recommended", "google"],
   "parserOptions": {
-    "ecmaVersion": 6
+    "ecmaVersion": 6,
+    "sourceType": "module"
   },
   "env": {
     "browser": true
@@ -18,6 +19,10 @@
     "quotes": [ "error", "double" ]
   },
   "globals": {
-    "Polymer": true
+    "glm": true,
+    "Float32Array": true,
+    "Polymer": true,
+    "Proxy": true,
+    "Uint8Array": true
   }
 }
