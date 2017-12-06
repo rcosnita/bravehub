@@ -13,3 +13,6 @@
 [submodule "configuration-app/third-party/tarballjs"]
 	path = configuration-app/third-party/tarballjs
 	url = https://github.com/ankitrohatgi/tarballjs.git
+[submodule "configuration-app/third-party/glm-js"]
+	path = configuration-app/third-party/glm-js
+	url = https://github.com/humbletim/glm-js.git
