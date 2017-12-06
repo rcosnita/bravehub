@@ -1,0 +1,60 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="configuration-api-details.html">
+<link rel="import" href="configuration-project-details.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="configuration-projects-webgl">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+        padding: 10px;
+
+        --side-menu-min-height: 500px;
+        --side-menu-min-width: 150px;
+        --side-menu-max-width: 300px;
+
+        --api-details-background: rgba(255, 255, 255, 0.5);
+      }
+
+      div.drawing-area {
+        display: flex;
+        width: 100%;
+        min-height: var(--side-menu-min-height);
+      }
+
+      div.side-menu {
+        min-height: var(--side-menu-min-height);
+        min-width: var(--side-menu-min-width);
+        max-width: var(--side-menu-max-width);
+      }
+
+      canvas.projects {
+        display: block;
+        border: 5px solid black;
+        outline: none;
+      }
+    </style>
+
+    <div class="card">
+      <div class="circle">3</div>
+
+      <div class="drawing-area">
+        <div class="side-menu">
+           <input type="button" value="New project" on-click="_addNode" data-item-type="project"></input>
+
+           <input type="button" value="New api" on-click="_addNode" data-item-type="api"></input>
+        </div>
+        <canvas id="projectsCanvas" width="800" height="500" class="projects"></canvas>
+    </div>
+    </div>
+
+    <slot></slot>
+  </template>
+
+  <script type="text/javascript" src="../third-party/eventemitter3/index.js"></script>
+  <script type="text/javascript" src="../third-party/glm-js/build/glm-js.min.js"></script>
+  <script type="text/javascript" src="../third-party/tarballjs/tarball.js"></script>
+  <script type="module" src="./js/configuration-projects-webgl.js"></script>
+</dom-module>

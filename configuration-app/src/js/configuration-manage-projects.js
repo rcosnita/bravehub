@@ -67,6 +67,10 @@ class ConfigurationManageProjects extends Polymer.Element {
   }
 
   _displayProject(item) {
+    if (!item) {
+      return;
+    }
+
     const projectId = item.value;
 
     Rx.Observable.from(this.projects)  // eslint-disable-line no-undef
