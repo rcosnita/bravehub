@@ -11,6 +11,12 @@ The platform for planning, deploying and releasing new innovators ideas.
 * Web components
 * Ansible 2
 
+# Specs
+
+* [Projects editor](docs/specs/projects-editor.md)
+* [Storage](docs/specs/storage.md)
+* [Service discovery](docs/specs/service-discovery.md)
+
 # Getting started
 
 In order to start the platform follow the steps below:
