@@ -7,6 +7,7 @@ HBASE_RS_CONFIG=$(cat {{hbase_home}}/regionservers | base64)
 PID_FILE="{{hbase_home}}/${HBASE_ROLE}".pid
 HBASE_CMD_OPTS=""
 DOCKER_OPTS=()
+DOCKER_REGISTRY_URI={{DOCKER_REGISTRY_URI}}
 DOCKER_HOSTNAME=$(cat {{hbase_home}}/hbase-${HBASE_ROLE}-hostname)
 
 if [[ ${HBASE_ROLE} == "master" ]]; then
@@ -39,6 +40,6 @@ CONTAINER_ID=$(docker run -it -d --env HBASE_SITE_CONFIG="${HBASE_SITE_CONFIG}" 
     -h ${DOCKER_HOSTNAME} \
     -v {{shared_storage}}/hbase:{{shared_storage}}/hbase:rw \
     ${DOCKER_OPTS[*]} \
-    bravehub/hbase:{{hbase_version}})
+    ${DOCKER_REGISTRY_URI}/hbase:{{hbase_version}})
 
 echo "${CONTAINER_ID}" > ${PID_FILE}

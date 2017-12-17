@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
+DOCKER_REGISTRY_URI="{{DOCKER_REGISTRY_URI}}"
+
 ZOOKEEPER_CONFIG=$(cat {{zookeeper_home}}/zkConf.cfg | base64)
-CONTAINER_ID=$(docker run -it -d -p 0.0.0.0:2181:2181/tcp --env ZOOKEEPER_CONFIG="${ZOOKEEPER_CONFIG}" -v {{shared_storage}}:{{shared_storage}}:rw bravehub/zookeeper:{{zookeeper_version}})
+CONTAINER_ID=$(docker run -it -d -p 0.0.0.0:2181:2181/tcp \
+               --env ZOOKEEPER_CONFIG="${ZOOKEEPER_CONFIG}" \
+               -v {{shared_storage}}:{{shared_storage}}:rw \
+               ${DOCKER_REGISTRY_URI}/zookeeper:{{zookeeper_version}})
 echo "${CONTAINER_ID}" > {{zookeeper_home}}/zookeeper.pid

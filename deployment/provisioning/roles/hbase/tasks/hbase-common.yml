@@ -16,6 +16,18 @@
     group: docker
     home: "{{hbase_home}}"
 
+- name: Obtain docker registry uri.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: |
+    . {{home_folder}}/instance-descriptor.sh && \
+    echo ${DOCKER_REGISTRY}/${Env}
+  register: instance_descriptor
+
+- set_fact:
+    DOCKER_REGISTRY_URI: "{{instance_descriptor.stdout}}"
+
 - name: Copy the start script.
   become: yes
   become_user: root
@@ -190,6 +202,17 @@
 - pause:
     seconds: "{{wait_for_zookeepeer_seconds}}" # give zookeeper dns record enough time to propagate.
   when: HBASE_ROLE == "thrift" and hbase_thrift_hostname
+
+- name: Authenticate hbase docker engine to all registries.
+  become: yes
+  become_user: root
+  become_method: sudo
+  include_role:
+    name: docker-setup
+    tasks_from: registry-auth
+  vars:
+    AUTH_HOME_DESTINATION: "{{hbase_home}}"
+    AUTH_HOME_USER: hbase
 
 - name: Activate hbase master service.
   become: yes

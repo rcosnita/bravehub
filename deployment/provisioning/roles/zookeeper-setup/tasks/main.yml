@@ -19,6 +19,18 @@
   tags:
     - zookeeper-setup
 
+- name: Obtain docker registry uri.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: |
+    . {{home_folder}}/instance-descriptor.sh && \
+    echo ${DOCKER_REGISTRY}/${Env}
+  register: instance_descriptor
+
+- set_fact:
+    DOCKER_REGISTRY_URI: "{{instance_descriptor.stdout}}"
+
 - name: Determine the zookeeper master hostname.
   include_role:
     name: shared-storage-setup
@@ -109,6 +121,19 @@
     src: etc/systemd/system/zookeeper.service
     dest: /etc/systemd/system/zookeeper.service
   when: ZOOKEEPER_IS_SERVER
+  tags:
+    - zookeeper-setup
+
+- name: Authenticate zookeeper docker engine to all registries.
+  become: yes
+  become_user: root
+  become_method: sudo
+  include_role:
+    name: docker-setup
+    tasks_from: registry-auth
+  vars:
+    AUTH_HOME_DESTINATION: "{{zookeeper_home}}"
+    AUTH_HOME_USER: zookeeper
   tags:
     - zookeeper-setup
 

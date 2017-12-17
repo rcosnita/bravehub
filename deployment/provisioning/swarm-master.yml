@@ -3,6 +3,6 @@
   roles:
     - aws
     - ntp-setup
-    - docker-setup
     - shared-storage-setup
+    - docker-setup
     - swarm-master

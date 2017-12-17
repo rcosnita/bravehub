@@ -3,9 +3,9 @@
   roles:
     - aws
     - ntp-setup
+    - shared-storage-setup
     - docker-setup
     - router-setup
-    - shared-storage-setup
     - zookeeper-setup
     - hbase-master-setup
     - hbase-regionserver-setup

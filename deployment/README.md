@@ -14,11 +14,8 @@ A **Bravehub** stack requires a key pair named the same as the stack. This keypa
 export AWS_DEFAULT_REGION=eu-west-1 # replace this with the desired region
 export AWS_DEFAULT_PROFILE=bravehub-stage # replace this with your actual profile
 
-WORKDIR=$(pwd)
-cd deployment/provisioning && sh build-images.sh aws stage 083512914311.dkr.ecr.eu-west-1.amazonaws.com
-
 cd ${WORKDIR}/deployment/aws
-sh manage.sh envs/stage.json create-stack
+sh manage.sh envs/stage.json bravehub-bootstrap-files-cfn create-stack # replace bravehub-bootstrap-files-cfn with the actual s3 bucket where cfn files are published.
 ```
 
 #### Update an existing stack
@@ -27,11 +24,8 @@ sh manage.sh envs/stage.json create-stack
 export AWS_DEFAULT_REGION=eu-west-1 # replace this with the desired region
 export AWS_DEFAULT_PROFILE=bravehub-stage # replace this with your actual profile
 
-WORKDIR=$(pwd)
-cd deployment/provisioning && sh build-images.sh aws stage 083512914311.dkr.ecr.eu-west-1.amazonaws.com
-
 cd ${WORKDIR}/deployment/aws
-sh manage.sh envs/stage.json
+sh manage.sh envs/stage.json bravehub-bootstrap-files-cfn # replace bravehub-bootstrap-files-cfn with the actual s3 bucket where cfn files are published.
 ```
 
 The json file contains all the attributes required to configure Bravehub infrastructure.

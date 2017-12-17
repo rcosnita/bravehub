@@ -11,11 +11,14 @@
   "routerInstanceTypeSpot": "m5.large",
   "routerMinCapacitySpot": 0,
   "routerMaxCapacitySpot": 5,
-  "routerDesiredCapacitySpot": 0,
+  "routerDesiredCapacitySpot": 3,
   "swarmMasterInstanceType": "t2.micro",
-  "swarmMasterCapacity": 0,
+  "swarmMasterCapacity": 3,
   "swarmWorkerInstanceType": "m5.large",
   "swarmWorkerCapacity": 0,
   "swarmWorkerSpotPrice": 0.05,
-  "swarmWorkerCapacitySpot": 0
+  "swarmWorkerCapacitySpot": 4,
+  "dockerRegistry": "083512914311.dkr.ecr.eu-west-1.amazonaws.com",
+  "dockerRegistryArn": "arn:aws:ecr:eu-west-1:083512914311:repository",
+  "dockerRegistryId": "083512914311"
 }
