@@ -13,7 +13,11 @@ A **Bravehub** stack requires a key pair named the same as the stack. This keypa
 ```bash
 export AWS_DEFAULT_REGION=eu-west-1 # replace this with the desired region
 export AWS_DEFAULT_PROFILE=bravehub-stage # replace this with your actual profile
-cd deployment/aws
+
+WORKDIR=$(pwd)
+cd deployment/provisioning && sh build-images.sh aws stage 083512914311.dkr.ecr.eu-west-1.amazonaws.com
+
+cd ${WORKDIR}/deployment/aws
 sh manage.sh envs/stage.json create-stack
 ```
 
@@ -22,7 +26,11 @@ sh manage.sh envs/stage.json create-stack
 ```bash
 export AWS_DEFAULT_REGION=eu-west-1 # replace this with the desired region
 export AWS_DEFAULT_PROFILE=bravehub-stage # replace this with your actual profile
-cd deployment/aws
+
+WORKDIR=$(pwd)
+cd deployment/provisioning && sh build-images.sh aws stage 083512914311.dkr.ecr.eu-west-1.amazonaws.com
+
+cd ${WORKDIR}/deployment/aws
 sh manage.sh envs/stage.json
 ```
 
@@ -35,4 +43,3 @@ Whenever they do this they must be very strict with the source of the request: *
 ### Provisioning
 
 * [Provisioning how to](provisioning/README.md)
-* [Docker images creation](provisioning/images/README.md)
