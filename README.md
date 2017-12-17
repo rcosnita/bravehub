@@ -13,9 +13,11 @@ The platform for planning, deploying and releasing new innovators ideas.
 
 # Specs
 
+* [Deployment](deployment/README.md)
 * [Projects editor](docs/specs/projects-editor.md)
 * [Storage](docs/specs/storage.md)
 * [Service discovery](docs/specs/service-discovery.md)
+* [Swarm orchestrator](docs/specs/swarm-orchestrator.md)
 
 # Getting started
 
