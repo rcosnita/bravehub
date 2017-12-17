@@ -18,15 +18,27 @@
 - set_fact:
     HBASE_SITE_CONFIG: "{{HBASE_SITE_CONFIG.stdout}}"
 
-- name: Run the setup db docker image.
+- name: Obtain docker registry uri.
   become: yes
   become_user: root
   become_method: sudo
-  docker_container:
-    name: bravehub
-    image: "bravehub/setup-database:{{bravehub_version}}"
-    env:
-      HBASE_SITE_CONFIG: "{{HBASE_SITE_CONFIG}}"
-      SCRIPT_NAME: "~/scripts/hbase/00-create-data-model.txt"
+  shell: |
+    . {{home_folder}}/instance-descriptor.sh && \
+    echo ${DOCKER_REGISTRY}/${Env}
+  register: instance_descriptor
+  tags:
+    - bravehub-db-setup
+
+- set_fact:
+    DOCKER_REGISTRY_URI: "{{instance_descriptor.stdout}}"
+
+- name: Run the setup db docker image.
+  become: yes
+  become_user: docker
+  become_method: sudo
+  shell: |
+      docker run -e "HBASE_SITE_CONFIG={{HBASE_SITE_CONFIG}}" \
+        -e "SCRIPT_NAME=~/scripts/hbase/00-create-data-model.txt" \
+        {{DOCKER_REGISTRY_URI}}/setup-database:{{bravehub_version}}
   tags:
     - bravehub-db-setup

@@ -18,6 +18,11 @@ aws s3 cp --recursive s3://${STACK_NAME}/provisioning/inventory inventory/
 aws s3 cp --recursive s3://${STACK_NAME}/provisioning/roles roles/
 aws s3 cp s3://${STACK_NAME}/provisioning/${ROLE}.yml .
 
+sudo pip install --upgrade pip
+sudo pip3 install --upgrade pip
+sudo pip install --upgrade awscli
+sudo pip3 install --upgrade awscli
+
 python3 -m venv venv
 . venv/bin/activate
 pip install --upgrade pip

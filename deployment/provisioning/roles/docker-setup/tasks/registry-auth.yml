@@ -1,0 +1,98 @@
+---
+- set_fact:
+    PLATFORM_LOCKFILE_TMP: "{{shared_storage}}/{{docker.registry_auth_lockfile}}.tmp"
+    PLATFORM_LOCKFILE: "{{shared_storage}}/{{docker.registry_auth_lockfile}}"
+    LOCAL_DOCKER_CONFIG: "{{docker.docker_home}}/.docker/config.json"
+    SHARED_DOCKER_CONFIG_FOLDER: "{{shared_storage}}/{{docker.registry_shared_config}}"
+    SHARED_DOCKER_CONFIG: "{{shared_storage}}/{{docker.registry_shared_config}}/config.json"
+
+- name: "Lock {{PLATFORM_LOCKFILE_TMP}}"
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: /usr/bin/lockfile-create --use-pid --retry 1000 --lock-name "{{PLATFORM_LOCKFILE_TMP}}"
+
+- name: Determine if any previous authentication exists.
+  become: yes
+  become_user: docker
+  become_method: sudo
+  stat:
+    path: "{{SHARED_DOCKER_CONFIG}}"
+  register: auth_status
+
+- name: Determine time elapsed since last authentication.
+  become: yes
+  become_user: docker
+  become_method: sudo
+  register: elapsed_time_str
+  shell: |
+    echo $(($(date +%s) - $(date +%s -r {{SHARED_DOCKER_CONFIG}})))
+  when: auth_status.stat.exists
+
+- set_fact:
+    MUST_AUTHENTICATE: "{{not auth_status.stat.exists or elapsed_time_str.stdout|int > docker.registry_auth_ttl_seconds|int}}"
+
+- name: "Lock {{PLATFORM_LOCKFILE}}"
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: /usr/bin/lockfile-create --use-pid --retry 1000 --lock-name "{{PLATFORM_LOCKFILE}}"
+  when: MUST_AUTHENTICATE
+
+- name: Authenticate docker engine against platform registry.
+  become: yes
+  become_user: docker
+  become_method: sudo
+  shell: |
+      . {{home_folder}}/instance-descriptor.sh && \
+      export ECR_AUTH=$(aws ecr get-login --no-include-email \
+                          --registry-ids ${DOCKER_REGISTRY_ID} \
+                          --region={{AWS_REGION_STR}}) && \
+      eval ${ECR_AUTH}
+  args:
+    executable: /bin/bash
+  when: MUST_AUTHENTICATE
+
+- name: "Unlock {{PLATFORM_LOCKFILE}}"
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: lockfile-remove --lock-name "{{PLATFORM_LOCKFILE}}"
+  when: MUST_AUTHENTICATE
+
+- name: Copy authentication config to shared location.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: |
+    mkdir -p {{SHARED_DOCKER_CONFIG_FOLDER}}
+    cp {{LOCAL_DOCKER_CONFIG}} {{SHARED_DOCKER_CONFIG}}
+  when: MUST_AUTHENTICATE
+
+- name: Copy authentication to docker home folder.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: |
+    rm -Rf {{docker.docker_home}}/.docker
+    cp -Rf {{SHARED_DOCKER_CONFIG_FOLDER}}/ {{docker.docker_home}}/.docker
+    chmod -R 760 {{docker.docker_home}}/.docker
+    chown -R docker:docker {{docker.docker_home}}/.docker
+  when: not MUST_AUTHENTICATE
+
+- name: "Unlock {{PLATFORM_LOCKFILE_TMP}}"
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: lockfile-remove --lock-name "{{PLATFORM_LOCKFILE_TMP}}"
+
+- name: "Copy authentication to specific {{AUTH_HOME_DESTINATION}}"
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: |
+    rm -Rf {{AUTH_HOME_DESTINATION}}/.docker
+    cp -Rf {{SHARED_DOCKER_CONFIG_FOLDER}}/ {{AUTH_HOME_DESTINATION}}/.docker
+    chmod -R 760 {{AUTH_HOME_DESTINATION}}/.docker
+    chown -R {{AUTH_HOME_USER}}:docker {{AUTH_HOME_DESTINATION}}/.docker
+  when: AUTH_HOME_DESTINATION is defined and AUTH_HOME_USER is defined

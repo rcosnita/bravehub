@@ -34,6 +34,9 @@ local:
 
       docker:
         docker_home: /home/docker
+        registry_auth_lockfile: docker_registry.lock
+        registry_auth_ttl_seconds: 7200
+        registry_shared_config: docker
         swarm:
           master:
             max_masters: 11

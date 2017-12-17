@@ -102,10 +102,9 @@
   tags:
     - docker-engine
 
-- name: Import all proprietary images.
-  become: yes
-  become_user: root
-  become_method: sudo
-  shell: find {{home_folder}}/provisioning/images -name *.tar | xargs -i docker load -i {}
+- name: Authenticate to registries.
+  include_role:
+    name: docker-setup
+    tasks_from: registry-auth
   tags:
     - docker-engine
