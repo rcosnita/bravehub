@@ -3,6 +3,7 @@ Bravehub platform provides several services which represent cross cutting concer
 - router layer (internal api gateway for the whole platform).
 - ntp layer (time synchronization infrastructure).
 - hbase / zookeeper layers (storage infrastructure).
+- docker swarm mode (containers orchestrator).
 
 In order to be able to easily locate each service we are using internal DNS servers for AWS / Azure / GCE.
 
@@ -25,6 +26,10 @@ based on the current dns entries available for the platform.
 | hbase-thrift.\<platform suffix\> | storage gateway | yes |
 | hbase-regionserver-1.\<platform suffix\> | storage | no |
 | hbase-regionserver-n.\<platform suffix\> | storage | no |
+| swarm-master-1.\<platform suffix\> | containers orchestrator | no |
+| swarm-master-n.\<platform suffix\> | containers orchestrator | no |
+| swarm-workers.\<platform suffix\> | containers orchestrator | yes |
+| portainer.\<platform suffix\> | containers manager | no |
 
 * **\<platform suffix\>** is a meta information configured for every deployment of bravehub platform
     - E.g: **api.internal.bravehub-stage.com**
