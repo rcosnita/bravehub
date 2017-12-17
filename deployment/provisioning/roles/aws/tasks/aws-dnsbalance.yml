@@ -5,7 +5,7 @@
     tasks_from: awscli-configure
 
 - name: Obtain all {{BALANCED_ROLE}} server ips.
-  shell: export AWS_DEFAULT_REGION={{AWS_REGION.stdout}} && . {{home_folder}}/instance-descriptor.sh && aws ec2 describe-instances --filters "Name=tag:bravehub:layer,Values={{SERVER_TAGGED_ROLE}}" --filters "Name=tag:bravehub:stack,Values=${STACK_NAME}" --filters "Name=instance-state-name,Values=running" | jq -r '.Reservations[].Instances[].NetworkInterfaces[0].PrivateIpAddress'
+  shell: export AWS_DEFAULT_REGION={{AWS_REGION.stdout}} && . {{home_folder}}/instance-descriptor.sh && aws ec2 describe-instances --filters "Name=tag:bravehub:layer,Values={{SERVER_TAGGED_ROLE}}" "Name=tag:bravehub:stack,Values=${STACK_NAME}" "Name=instance-state-name,Values=running" | jq -r '.Reservations[].Instances[].NetworkInterfaces[0].PrivateIpAddress'
   register: BALANCED_IPS
 
 - name: Configure {{BALANCED_ROLE}} record set json input.

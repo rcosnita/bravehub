@@ -50,12 +50,6 @@ Parameters:
   SwarmMasterCapacity:
     Type: String
     Description: The number of master nodes we place in the deterministic scaling group.
-  SwarmMasterSpotPrice:
-    Type: String
-    Description: The price we are willing to pay for every master node placed in the speculative scaling group.
-  SwarmMasterCapacitySpot:
-    Type: String
-    Description: The number of master nodes we place in speculative scaling group.
   SwarmWorkerInstanceType:
     Type: String
     Description: The instance type we want to use for docker swarm worker nodes.
@@ -567,7 +561,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 188.27.206.11/32
+          CidrIp: 79.115.189.152/32
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 0
@@ -635,7 +629,7 @@ Resources:
                 Action:
                   - "cloudformation:DescribeStacks"
                 Resource: "*"
-  RouterAutoScalingIamProfile:                
+  RouterAutoScalingIamProfile:
     Type: "AWS::IAM::InstanceProfile"
     Properties: 
       Path: "/"
@@ -860,6 +854,10 @@ Resources:
           ToPort: 2377
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           SourceSecurityGroupId: !Ref RouterSecurityGroup
@@ -880,6 +878,10 @@ Resources:
           FromPort: 2049
           ToPort: 2049
           CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 7946
+          ToPort: 7946
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
           Value: swarm-master-sg
@@ -891,6 +893,103 @@ Resources:
           Value: !Ref BravehubEnv
         - Key: "bravehub:layer"
           Value: "docker-swarm-master"
+  SwarmMasterSecurityGroupWorkerIngressTcp:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties: 
+      GroupId: !Ref SwarmMasterSecurityGroup
+      FromPort: 7946
+      ToPort: 7946
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+  SwarmMasterSecurityGroupWorkerIngressUdp:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties: 
+      GroupId: !Ref SwarmMasterSecurityGroup
+      FromPort: 7946
+      ToPort: 7946
+      IpProtocol: udp
+      SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+  SwarmMasterSecurityGroupWhisperIngressTcp:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties: 
+      GroupId: !Ref SwarmMasterSecurityGroup
+      FromPort: 7946
+      ToPort: 7946
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+  SwarmMasterSecurityGroupWhisperIngressUdp:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties: 
+      GroupId: !Ref SwarmMasterSecurityGroup
+      FromPort: 7946
+      ToPort: 7946
+      IpProtocol: udp
+      SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+  SwarmMasterSecurityGroupWhisperEgressTcp:
+    Type: "AWS::EC2::SecurityGroupEgress"
+    Properties: 
+      GroupId: !Ref SwarmMasterSecurityGroup
+      FromPort: 7946
+      ToPort: 7946
+      IpProtocol: tcp
+      DestinationSecurityGroupId: !Ref SwarmMasterSecurityGroup
+  SwarmMasterSecurityGroupWhisperEgressUdp:
+    Type: "AWS::EC2::SecurityGroupEgress"
+    Properties: 
+      GroupId: !Ref SwarmMasterSecurityGroup
+      FromPort: 7946
+      ToPort: 7946
+      IpProtocol: udp
+      DestinationSecurityGroupId: !Ref SwarmMasterSecurityGroup
+  SwarmMasterAutoScalingIamRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "ec2.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: "ec2-permissions"
+          PolicyDocument:
+            Version : "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "ec2:DescribeInstances"
+                Resource: "*"
+        - PolicyName: "route53-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "route53:GetHostedZone"
+                  - "route53:ChangeResourceRecordSets"
+                Resource: !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcInternalApiDns ] ]
+        - PolicyName: "cloudformation-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "cloudformation:DescribeStacks"
+                Resource: "*"
+  SwarmMasterAutoScalingIamProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties: 
+      Path: "/"
+      Roles:
+        - !Ref SwarmMasterAutoScalingIamRole
   SwarmMasterAutoScalingLaunchConfig:
     Type: "AWS::AutoScaling::LaunchConfiguration"
     Properties:
@@ -898,11 +997,31 @@ Resources:
       ImageId: !FindInMap [ "RegionAZsMap", Ref: "AWS::Region", "SwarmMasterImage" ]
       InstanceMonitoring: true
       InstanceType: !Ref SwarmMasterInstanceType
+      IamInstanceProfile: !Ref SwarmMasterAutoScalingIamProfile
       KeyName: !Ref StackName
       SecurityGroups:
         - !Ref NtpSecurityGroup
         - !Ref SwarmMasterSecurityGroup
-      UserData: ""
+      UserData:
+        Fn::Base64:
+          Fn::Join:
+            - "\n"
+            - - "#!/bin/sh"
+              - ""
+              - "PATH=$PATH:/usr/bin:/usr/sbin:/usr/local/bin"
+              - "apt-get install -y awscli"
+              - "cd /home/ubuntu"
+              - !Join ["", [ "echo 'export ROLE=swarm-master'", " >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
+              - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
+              - "chmod u+x bravehub-bootstrap.sh"
+              - "chown -R ubuntu:ubuntu ."
+              - "cp /home/ubuntu/bravehub.service /etc/systemd/user/bravehub.service"
+              - "systemctl enable /etc/systemd/user/bravehub.service"
+              - "systemctl daemon-reload"
+              - "systemctl start bravehub"
   SwarmMasterAutoScaling:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:
@@ -927,58 +1046,13 @@ Resources:
           Value: !Ref StackName
           PropagateAtLaunch: true
         - Key: "bravehub:environment"
-          Value: !Ref BravehubEnv        
+          Value: !Ref BravehubEnv
           PropagateAtLaunch: true
         - Key: "bravehub:layer"
           Value: "docker-swarm-master"
           PropagateAtLaunch: true
         - Key: "bravehub:scaler"
           Value: "deterministic"
-          PropagateAtLaunch: true
-  SwarmMasterAutoScalingLaunchConfigSpot:
-    Type: "AWS::AutoScaling::LaunchConfiguration"
-    Properties:
-      AssociatePublicIpAddress: "false"
-      ImageId: !FindInMap [ "RegionAZsMap", Ref: "AWS::Region", "SwarmMasterImage" ]
-      InstanceMonitoring: true
-      InstanceType: !Ref SwarmMasterInstanceType
-      KeyName: !Ref StackName
-      SecurityGroups:
-        - !Ref NtpSecurityGroup
-        - !Ref SwarmMasterSecurityGroup
-      SpotPrice: !Ref SwarmMasterSpotPrice
-      UserData: ""
-  SwarmMasterAutoScalingSpot:
-    Type: "AWS::AutoScaling::AutoScalingGroup"
-    Properties:
-      AvailabilityZones:
-        - !Select [ 0, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
-        - !Select [ 1, !FindInMap [ RegionAZsMap, Ref: "AWS::Region", "AZs" ] ]
-      DesiredCapacity: !Ref SwarmMasterCapacitySpot
-      MaxSize: !Ref SwarmMasterCapacitySpot
-      MinSize: !Ref SwarmMasterCapacitySpot
-      LaunchConfigurationName: !Ref SwarmMasterAutoScalingLaunchConfigSpot
-      VPCZoneIdentifier:
-        - !Ref RegionalVpcSwarmMasterSubnet1
-        - !Ref RegionalVpcSwarmMasterSubnet2
-      Tags:
-        - Key: Name
-          Value: swarm-master-scaling-group
-          PropagateAtLaunch: true
-        - Key: "bravehub:vpc"
-          Value: !Ref RegionalVpc
-          PropagateAtLaunch: true
-        - Key: "bravehub:stack"
-          Value: !Ref StackName
-          PropagateAtLaunch: true
-        - Key: "bravehub:environment"
-          Value: !Ref BravehubEnv        
-          PropagateAtLaunch: true
-        - Key: "bravehub:layer"
-          Value: "docker-swarm-master"
-          PropagateAtLaunch: true
-        - Key: "bravehub:scaler"
-          Value: "speculative"
           PropagateAtLaunch: true
   RegionalVpcSwarmWorkerTable:
     Type: "AWS::EC2::RouteTable"
@@ -1056,6 +1130,14 @@ Resources:
       VpcId: !Ref RegionalVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
+          FromPort: 4789
+          ToPort: 4789
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 7946
+          ToPort: 7946
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
           FromPort: 7946
           ToPort: 7946
           SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
@@ -1095,18 +1177,67 @@ Resources:
     Type: "AWS::EC2::SecurityGroupIngress"
     Properties:
       IpProtocol: tcp
-      FromPort: 7946
-      ToPort: 7946
+      FromPort: 0
+      ToPort: 65535
       SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
       GroupId: !Ref SwarmWorkerSecurityGroup
   SwarmWorkerToWorkerClusterUdpRule:
     Type: "AWS::EC2::SecurityGroupIngress"
     Properties:
       IpProtocol: udp
-      FromPort: 7946
-      ToPort: 7946
+      FromPort: 0
+      ToPort: 65535
       SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
       GroupId: !Ref SwarmWorkerSecurityGroup
+  SwarmWorkerAutoScalingIamRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "ec2.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: "ec2-permissions"
+          PolicyDocument:
+            Version : "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "ec2:DescribeInstances"
+                Resource: "*"
+        - PolicyName: "route53-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "route53:GetHostedZone"
+                  - "route53:ChangeResourceRecordSets"
+                Resource: !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcInternalApiDns ] ]
+        - PolicyName: "cloudformation-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "cloudformation:DescribeStacks"
+                Resource: "*"
+  SwarmWorkerAutoScalingIamProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties: 
+      Path: "/"
+      Roles:
+        - !Ref SwarmWorkerAutoScalingIamRole
   SwarmWorkerAutoScalingLaunchConfig:
     Type: "AWS::AutoScaling::LaunchConfiguration"
     Properties:
@@ -1114,11 +1245,31 @@ Resources:
       ImageId: !FindInMap [ "RegionAZsMap", Ref: "AWS::Region", "SwarmWorkerImage" ]
       InstanceMonitoring: true
       InstanceType: !Ref SwarmWorkerInstanceType
+      IamInstanceProfile: !Ref SwarmWorkerAutoScalingIamProfile
       KeyName: !Ref StackName
       SecurityGroups:
         - !Ref NtpSecurityGroup
         - !Ref SwarmWorkerSecurityGroup
-      UserData: ""
+      UserData:
+        Fn::Base64:
+          Fn::Join:
+            - "\n"
+            - - "#!/bin/sh"
+              - ""
+              - "PATH=$PATH:/usr/bin:/usr/sbin:/usr/local/bin"
+              - "apt-get install -y awscli"
+              - "cd /home/ubuntu"
+              - !Join ["", [ "echo 'export ROLE=swarm-worker'", " >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
+              - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
+              - "chmod u+x bravehub-bootstrap.sh"
+              - "chown -R ubuntu:ubuntu ."
+              - "cp /home/ubuntu/bravehub.service /etc/systemd/user/bravehub.service"
+              - "systemctl enable /etc/systemd/user/bravehub.service"
+              - "systemctl daemon-reload"
+              - "systemctl start bravehub"
   SwarmWorkerAutoScaling:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:
@@ -1143,7 +1294,7 @@ Resources:
           Value: !Ref StackName
           PropagateAtLaunch: true
         - Key: "bravehub:environment"
-          Value: !Ref BravehubEnv        
+          Value: !Ref BravehubEnv
           PropagateAtLaunch: true
         - Key: "bravehub:layer"
           Value: "docker-swarm-worker"
@@ -1158,12 +1309,32 @@ Resources:
       ImageId: !FindInMap [ "RegionAZsMap", Ref: "AWS::Region", "SwarmWorkerImage" ]
       InstanceMonitoring: true
       InstanceType: !Ref SwarmWorkerInstanceType
+      IamInstanceProfile: !Ref SwarmWorkerAutoScalingIamProfile
       KeyName: !Ref StackName
       SecurityGroups:
         - !Ref NtpSecurityGroup
         - !Ref SwarmWorkerSecurityGroup
       SpotPrice: !Ref SwarmWorkerSpotPrice
-      UserData: ""
+      UserData:
+        Fn::Base64:
+          Fn::Join:
+            - "\n"
+            - - "#!/bin/sh"
+              - ""
+              - "PATH=$PATH:/usr/bin:/usr/sbin:/usr/local/bin"
+              - "apt-get install -y awscli"
+              - "cd /home/ubuntu"
+              - !Join ["", [ "echo 'export ROLE=swarm-worker'", " >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
+              - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
+              - "chmod u+x bravehub-bootstrap.sh"
+              - "chown -R ubuntu:ubuntu ."
+              - "cp /home/ubuntu/bravehub.service /etc/systemd/user/bravehub.service"
+              - "systemctl enable /etc/systemd/user/bravehub.service"
+              - "systemctl daemon-reload"
+              - "systemctl start bravehub"
   SwarmWorkerAutoScalingSpot:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:

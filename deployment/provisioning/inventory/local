@@ -6,11 +6,13 @@ local:
       dns_ttl: 30
       shared_storage: /opt/shared-storage
       provisioning_storage: /opt/shared-storage/provisioning
+
       zookeeper_uid: 2000
       zookeeper_home: /home/zookeeper
       zookeeper_version: 0.1.0
       zookeeper_max_instances: 1
       zookeeper_pattern: zookeeper
+
       hbase_uid: 2010
       hbase_home: /home/hbase
       hbase_version: 0.1.0
@@ -25,6 +27,25 @@ local:
       hbase_thrift_pattern: "hbase-thrift-{0}"
       hbase_thrift_port: 9090
       hbase_thrift_infoport: 9100
+
       router_balanced_name: "router"
       router_instance_role: "routing-api-gateway"
       bravehub_version: 0.1.0
+
+      docker:
+        docker_home: /home/docker
+        swarm:
+          master:
+            max_masters: 11
+            first_master: swarm-master-1
+            pattern: "swarm-master-{0}"
+          worker:
+            max_workers: 1000
+            pattern: "swarm-worker-{0}"
+            balanced_name: "swarm-workers"
+            tagged_role:  "docker-swarm-worker"
+          portainer:
+            portainer_uid: 2020
+            home: /home/portainer
+            port: 9000
+            dns_name_prefix: "portainer"

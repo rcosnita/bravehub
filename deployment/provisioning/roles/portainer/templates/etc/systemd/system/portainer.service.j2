@@ -1,0 +1,13 @@
+[Unit]
+Description=Bravehub portainer management script.
+Requires=network.target docker.service
+
+[Service]
+User=portainer
+Group=docker
+Type=idle
+Restart=on-failure
+EnvironmentFile=-{{home_folder}}/instance-descriptor.sh
+ExecStart={{docker.swarm.portainer.home}}/manage.sh start
+ExecStop={{docker.swarm.portainer.home}}/manage.sh stop
+WorkingDirectory={{docker.swarm.portainer.home}}

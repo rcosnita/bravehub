@@ -1,0 +1,30 @@
+---
+- name: Wait for {{SWARM_MASTER}}.
+  shell: |
+    while ! nslookup {{SWARM_MASTER}}; do \
+      sleep 30; \
+    done
+
+- name: Wait for {{SWARM_MASTER}} 7946.
+  shell: |
+    while ! nc -z {{SWARM_MASTER}} 7946; do \
+      sleep 1; \
+    done
+
+- name: Wait for {{SWARM_MASTER}} 7946.
+  shell: |
+    while ! nc -z {{SWARM_MASTER}} 7946; do \
+      sleep 1; \
+    done
+
+- name: Wait for master token to be created.
+  wait_for:
+    path: "{{SWARM_TOKEN_LOCATION}}"
+    state: present
+  when: SWARM_TOKEN_LOCATION is defined
+
+- name: Wait for worker token to be created.
+  wait_for:
+    path: "{{SWARM_WORKER_TOKEN_LOCATION}}"
+    state: present
+  when: SWARM_WORKER_TOKEN_LOCATION is defined
