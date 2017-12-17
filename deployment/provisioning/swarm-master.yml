@@ -1,0 +1,8 @@
+---
+- hosts: all
+  roles:
+    - aws
+    - ntp-setup
+    - docker-setup
+    - shared-storage-setup
+    - swarm-master

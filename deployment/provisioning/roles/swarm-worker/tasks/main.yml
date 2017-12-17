@@ -1,0 +1,46 @@
+---
+- name: Setup awscli.
+  include_role:
+    name: aws
+    tasks_from: awscli-configure
+
+- name: Determine the swarm worker hostname.
+  include_role:
+    name: shared-storage-setup
+    tasks_from: server-hostname
+  vars:
+    SERVER_HOSTNAME_LOCK_FILE: "{{provisioning_storage}}/swarm-worker.lock"
+    SERVER_HOSTNAME_FILE: "{{docker.docker_home}}/swarm-worker-hostname"
+    SERVER_MAX_INSTANCES: "{{docker.swarm.worker.max_workers}}"
+    SERVER_INVENTORY_FILE: "{{provisioning_storage}}/swarm-workers.json"
+    SERVER_NAME_PATTERN: "{{docker.swarm.worker.pattern}}.{{API_ZONE_NAME_STR}}"
+
+- set_fact:
+    SWARM_WORKER_HOSTNAME: "{{SERVER_HOSTNAME}}"
+    SWARM_FIRST_MASTER: "{{docker.swarm.master.first_master}}.{{API_ZONE_NAME_STR}}"
+    SWARM_WORKER_TOKEN_LOCATION: "{{provisioning_storage}}/swarm-token-worker"
+
+- name: Wait for swarm master to finish.
+  include_role:
+    name: swarm-master
+    tasks_from: wait-master
+  vars:
+    SWARM_MASTER: "{{SWARM_FIRST_MASTER}}"
+
+- name: Join the worker to the swarm.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: |
+    docker swarm join \
+      --token $(cat {{SWARM_WORKER_TOKEN_LOCATION}}) \
+      {{SWARM_FIRST_MASTER}}:2377
+  ignore_errors: yes
+
+- name: Balance swarm workers.
+  include_role:
+    name: aws
+    tasks_from: aws-dnsbalance
+  vars:
+    BALANCED_ROLE: "{{docker.swarm.worker.balanced_name}}"
+    SERVER_TAGGED_ROLE: "{{docker.swarm.worker.tagged_role}}"

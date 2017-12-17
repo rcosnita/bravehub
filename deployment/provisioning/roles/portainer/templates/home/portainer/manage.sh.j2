@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+ACTION=${1}
+PORT={{docker.swarm.portainer.port}}
+DATA_FOLDER={{shared_storage}}/portainer
+IMAGE_NAME=portainer/portainer
+IMAGE_VERSION=1.15.5
+
+function start {
+  docker run -p 0.0.0.0:${PORT}:9000 \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v ${DATA_FOLDER}:/data \
+    ${IMAGE_NAME}:${IMAGE_VERSION}
+}
+
+function stop {
+  docker ps | \
+    grep "${IMAGE_NAME}:${IMAGE_VERSION}" | \
+    awk '{print $1}' | \
+    xargs -I{} docker stop {} || true
+}
+
+case ${ACTION} in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    *)
+        echo "Unsupported action: ${ACTION}"
+        exit -1
+esac

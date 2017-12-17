@@ -1,0 +1,66 @@
+---
+- name: Setup awscli.
+  include_role:
+    name: aws
+    tasks_from: awscli-configure
+
+- name: Create the portainer user.
+  become: yes
+  become_user: root
+  become_method: sudo
+  user:
+    name: portainer
+    uid: "{{docker.swarm.portainer.portainer_uid}}"
+    comment: "Portainer user."
+    state: present
+    group: docker
+    home: "{{docker.swarm.portainer.home}}"
+
+- name: Copy the start script.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: home/portainer/manage.sh.j2
+    dest: "{{docker.swarm.portainer.home}}/manage.sh"
+    owner: portainer
+    mode: 0760
+
+- name: Create the portainer data storage.
+  become: yes
+  become_user: root
+  become_method: sudo
+  file:
+    path: "{{shared_storage}}/portainer"
+    state: directory
+    group: root
+    owner: portainer
+    mode: "u+rw,g+r,o-r"
+
+- name: Copy the portainer systemd script.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: etc/systemd/system/portainer.service.j2
+    dest: /etc/systemd/system/portainer.service
+
+- name: Activate the portainer service.
+  become: yes
+  become_user: root
+  become_method: sudo
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: portainer
+    state: restarted
+
+- set_fact:
+    PORTAINER_HOSTNAME: "{{docker.swarm.portainer.dns_name_prefix}}.{{API_ZONE_NAME_STR}}"
+
+- name: Store portainer dns entry.
+  include_role:
+    name: aws
+    tasks_from: aws-setrecord.yml
+  vars:
+    DOMAIN_NAME: "{{PORTAINER_HOSTNAME}}"

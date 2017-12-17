@@ -3,6 +3,11 @@ set -eo pipefail
 
 STACK_CONFIG_FILE=${1:-envs/stage.json}
 STACK_ACTION=${2:-update-stack}
+STACK_WAIT_ACTION=stack-update-complete
+
+if [[ ${STACK_ACTION} == "create-stack" ]]; then
+  STACK_WAIT_ACTION=stack-create-complete
+fi
 
 STACK_NAME=$(jq --raw-output .name ${STACK_CONFIG_FILE})
 STACK_DNS_SUFFIX=$(jq --raw-output .dnsSuffix ${STACK_CONFIG_FILE})
@@ -21,8 +26,6 @@ STACK_ROUTER_DESIRED_CAPACITY_SPOT=$(jq --raw-output .routerDesiredCapacitySpot 
 
 STACK_SWARM_MASTER_INSTANCE_TYPE=$(jq --raw-output .swarmMasterInstanceType ${STACK_CONFIG_FILE})
 STACK_SWARM_MASTER_CAPACITY=$(jq --raw-output .swarmMasterCapacity ${STACK_CONFIG_FILE})
-STACK_SWARM_MASTER_SPOT_PRICE=$(jq --raw-output .swarmMasterSpotPrice ${STACK_CONFIG_FILE})
-STACK_SWARM_MASTER_CAPACITY_SPOT=$(jq --raw-output .swarmMasterCapacitySpot ${STACK_CONFIG_FILE})
 
 STACK_SWARM_WORKER_INSTANCE_TYPE=$(jq --raw-output .swarmWorkerInstanceType ${STACK_CONFIG_FILE})
 STACK_SWARM_WORKER_CAPACITY=$(jq --raw-output .swarmWorkerCapacity ${STACK_CONFIG_FILE})
@@ -49,8 +52,6 @@ STACK_PARAMS=(
   ParameterKey=RouterDesiredCapacitySpot,ParameterValue=${STACK_ROUTER_DESIRED_CAPACITY_SPOT}
   ParameterKey=SwarmMasterInstanceType,ParameterValue=${STACK_SWARM_MASTER_INSTANCE_TYPE}
   ParameterKey=SwarmMasterCapacity,ParameterValue=${STACK_SWARM_MASTER_CAPACITY}
-  ParameterKey=SwarmMasterSpotPrice,ParameterValue=${STACK_SWARM_MASTER_SPOT_PRICE}
-  ParameterKey=SwarmMasterCapacitySpot,ParameterValue=${STACK_SWARM_MASTER_CAPACITY_SPOT}
   ParameterKey=SwarmWorkerInstanceType,ParameterValue=${STACK_SWARM_WORKER_INSTANCE_TYPE}
   ParameterKey=SwarmWorkerCapacity,ParameterValue=${STACK_SWARM_WORKER_CAPACITY}
   ParameterKey=SwarmWorkerSpotPrice,ParameterValue=${STACK_SWARM_WORKER_SPOT_PRICE}
@@ -61,4 +62,7 @@ aws cloudformation ${STACK_ACTION} \
   --stack-name ${STACK_NAME} \
   --template-body file://$(pwd)/infra.yml \
   --parameters ${STACK_PARAMS[*]} \
-  --capabilities CAPABILITY_IAM
+  --capabilities CAPABILITY_IAM \
+
+aws cloudformation wait ${STACK_WAIT_ACTION} \
+  --stack-name ${STACK_NAME}
