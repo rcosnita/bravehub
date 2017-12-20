@@ -570,7 +570,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 79.115.189.152/32
+          CidrIp: 193.105.140.131/32
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 0
@@ -1018,6 +1018,17 @@ Resources:
                 Action:
                   - "cloudformation:DescribeStacks"
                 Resource: "*"
+        - PolicyName: "ecr-platform-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:BatchGetImage"
+                Resource: "*"
   SwarmMasterAutoScalingIamProfile:
     Type: "AWS::IAM::InstanceProfile"
     Properties: 
@@ -1268,6 +1279,17 @@ Resources:
                 Effect: "Allow"
                 Action:
                   - "cloudformation:DescribeStacks"
+                Resource: "*"
+        - PolicyName: "ecr-platform-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:BatchGetImage"
                 Resource: "*"
   SwarmWorkerAutoScalingIamProfile:
     Type: "AWS::IAM::InstanceProfile"

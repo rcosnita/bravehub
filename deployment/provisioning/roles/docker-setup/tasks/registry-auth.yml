@@ -80,12 +80,6 @@
     chown -R docker:docker {{docker.docker_home}}/.docker
   when: not MUST_AUTHENTICATE
 
-- name: "Unlock {{PLATFORM_LOCKFILE_TMP}}"
-  become: yes
-  become_user: root
-  become_method: sudo
-  shell: lockfile-remove --lock-name "{{PLATFORM_LOCKFILE_TMP}}"
-
 - name: "Copy authentication to specific {{AUTH_HOME_DESTINATION}}"
   become: yes
   become_user: root
@@ -96,3 +90,9 @@
     chmod -R 760 {{AUTH_HOME_DESTINATION}}/.docker
     chown -R {{AUTH_HOME_USER}}:docker {{AUTH_HOME_DESTINATION}}/.docker
   when: AUTH_HOME_DESTINATION is defined and AUTH_HOME_USER is defined
+
+- name: "Unlock {{PLATFORM_LOCKFILE_TMP}}"
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: lockfile-remove --lock-name "{{PLATFORM_LOCKFILE_TMP}}"
