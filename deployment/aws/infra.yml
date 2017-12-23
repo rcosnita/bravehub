@@ -570,7 +570,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 193.105.140.131/32
+          CidrIp: 89.137.28.233/32
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 0
@@ -694,6 +694,7 @@ Resources:
               - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export DOCKER_REGISTRY=", !Ref StackDockerRegistry, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export DOCKER_REGISTRY_ID=", !Ref StackDockerRegistryId, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export CLUSTER_SUFFIX=", !Ref DnsSuffix, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
@@ -767,6 +768,7 @@ Resources:
               - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export DOCKER_REGISTRY=", !Ref StackDockerRegistry, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export DOCKER_REGISTRY_ID=", !Ref StackDockerRegistryId, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export CLUSTER_SUFFIX=", !Ref DnsSuffix, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
@@ -1061,6 +1063,7 @@ Resources:
               - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export DOCKER_REGISTRY=", !Ref StackDockerRegistry, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export DOCKER_REGISTRY_ID=", !Ref StackDockerRegistryId, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export CLUSTER_SUFFIX=", !Ref DnsSuffix, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
@@ -1323,6 +1326,7 @@ Resources:
               - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export DOCKER_REGISTRY=", !Ref StackDockerRegistry, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export DOCKER_REGISTRY_ID=", !Ref StackDockerRegistryId, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export CLUSTER_SUFFIX=", !Ref DnsSuffix, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
@@ -1391,6 +1395,7 @@ Resources:
               - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export DOCKER_REGISTRY=", !Ref StackDockerRegistry, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export DOCKER_REGISTRY_ID=", !Ref StackDockerRegistryId, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export CLUSTER_SUFFIX=", !Ref DnsSuffix, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]

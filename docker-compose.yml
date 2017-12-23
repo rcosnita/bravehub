@@ -22,7 +22,7 @@ services:
       NAS_MOUNT: /root/nas
       PYTHONPATH: .:src
     ports:
-      - "0.0.0.0:5000:5000"
+      - "127.0.0.1:5000:5000"
     volumes:
       - ./configuration-api:/root/configuration-api:consistent
       - ./bravehub_shared:/root/configuration-api/src/bravehub_shared:consistent
@@ -32,7 +32,7 @@ services:
   configuration-app.api.internal.bravehub-dev.com:
     build: configuration-app
     ports:
-      - "0.0.0.0:9000:8080"
+      - "127.0.0.1:9000:8080"
     volumes:
       - ./configuration-app/src:/root/src:consistent
       - ./configuration-app/third-party:/root/third-party:consistent
@@ -52,7 +52,7 @@ services:
       FLASK_APP: src/app.py
       PYTHONPATH: .:src
     ports:
-      - "0.0.0.0:5010:5000"
+      - "127.0.0.1:5010:5000"
     volumes:
       - ./logging-api:/root/logging-api:consistent
       - ./bravehub_shared:/root/logging-api/src/bravehub_shared:consistent
@@ -73,7 +73,7 @@ services:
       PYTHONPATH: .:src
       HBASE_THRIFT_API: hbase-thrift.api.internal.bravehub-dev.com
     ports:
-      - "0.0.0.0:5020:5000"
+      - "127.0.0.1:5020:5000"
     volumes:
       - ./provisioning-api:/root/provisioning-api:consistent
       - ./bravehub_shared:/root/provisioning-api/src/bravehub_shared:consistent
@@ -106,7 +106,7 @@ services:
     build: deployment/hadoop/zookeeper
     hostname: zookeeper-1.api.internal.bravehub-dev.com
     ports:
-      - "0.0.0.0:2181:2181"
+      - "127.0.0.1:2181:2181"
     environment:
       # Read deployment/hadoop/zookeeper/conf/dev.cfg plain text representation
       ZOOKEEPER_CONFIG: "dGlja1RpbWU9MjAwMApkYXRhRGlyPS92YXIvem9va2VlcGVyCmNsaWVudFBvcnQ9MjE4MQphdXRvcHVyZ2Uuc25hcFJldGFpbkNvdW50PTMK"
@@ -120,8 +120,8 @@ services:
       - zookeeper-1.api.internal.bravehub-dev.com
     hostname: hbase-master-1.api.internal.bravehub-dev.com
     ports:
-      - "0.0.0.0:16000:16000"
-      - "0.0.0.0:16010:16010"
+      - "127.0.0.1:16000:16000"
+      - "127.0.0.1:16010:16010"
     env_file:
       - deployment/hadoop/hbase/conf/dev-hbase-environment.env
     environment:
@@ -136,8 +136,8 @@ services:
       - zookeeper-1.api.internal.bravehub-dev.com
     hostname: hbase-master-2.api.internal.bravehub-dev.com
     ports:
-      - "0.0.0.0:16100:16000"
-      - "0.0.0.0:16110:16010"
+      - "127.0.0.1:16100:16000"
+      - "127.0.0.1:16110:16010"
     env_file:
       - deployment/hadoop/hbase/conf/dev-hbase-environment.env
     environment:
@@ -153,7 +153,7 @@ services:
       - zookeeper-1.api.internal.bravehub-dev.com
       - hbase-master-1.api.internal.bravehub-dev.com
     ports:
-      - "0.0.0.0:16030:16030"
+      - "127.0.0.1:16030:16030"
     env_file:
       - deployment/hadoop/hbase/conf/dev-hbase-environment.env
     environment:
@@ -169,7 +169,7 @@ services:
       - zookeeper-1.api.internal.bravehub-dev.com
       - hbase-master-1.api.internal.bravehub-dev.com
     ports:
-      - "0.0.0.0:16050:16030"
+      - "127.0.0.1:16050:16030"
     env_file:
       - deployment/hadoop/hbase/conf/dev-hbase-environment.env
     environment:
@@ -187,8 +187,8 @@ services:
       - hbase-regionserver-1.api.internal.bravehub-dev.com
       - hbase-regionserver-2.api.internal.bravehub-dev.com
     ports:
-      - "0.0.0.0:9090:9090"
-      - "0.0.0.0:9100:9100"
+      - "127.0.0.1:9090:9090"
+      - "127.0.0.1:9100:9100"
     env_file:
       - deployment/hadoop/hbase/conf/dev-hbase-environment.env
     environment:
@@ -229,7 +229,7 @@ services:
       context: load-balancer
       dockerfile: Dockerfile
     ports:
-      - "0.0.0.0:80:8080"
+      - "127.0.0.1:80:8080"
     volumes:
       - ./load-balancer/config/nginx.conf:/etc/nginx/nginx.conf
     networks:

@@ -1,0 +1,42 @@
+---
+- set_fact:
+    SERVICE_HOME: "{{home_folder}}/services"
+    SERVICE_COMPOSE: "{{home_folder}}/services/{{SERVICE_NAME}}.yml"
+
+- name: "Create service home: {{SERVICE_HOME}}"
+  become: yes
+  become_user: root
+  become_method: sudo
+  file:
+    path: "{{SERVICE_HOME}}"
+    state: directory
+    mode: 0755
+
+- name: "Upload service {{SERVICE_NAME}} definition."
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: home/ubuntu/services/service.yml.j2
+    dest: "{{SERVICE_COMPOSE}}"
+
+- name: "Deploy {{SERVICE_NAME}} in swarm."
+  become: yes
+  become_user: docker
+  become_method: sudo
+  shell:
+    docker stack deploy --compose-file {{SERVICE_COMPOSE}} \
+      --prune \
+      --with-registry-auth \
+      {{SERVICE_NAME}}
+
+- name: "Set {{SERVICE_NAME}} ---> {{SERVICE_HOSTNAME}} dns entry."
+  become: yes
+  become_user: root
+  become_method: sudo
+  include_role:
+    name: aws
+    tasks_from: aws-setrecord.yml
+  vars:
+    DOMAIN_NAME: "{{SERVICE_HOSTNAME}}"
+    DOMAIN_CNAME: "swarm-workers.{{CLUSTER_DNS_ZONE}}"

@@ -1,0 +1,125 @@
+---
+- name: Obtain docker registry uri.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: |
+    . {{home_folder}}/instance-descriptor.sh && \
+    echo ${DOCKER_REGISTRY}/${Env}
+  register: docker_registry_cmd
+
+- set_fact:
+    DOCKER_REGISTRY_URI: "{{docker_registry_cmd.stdout}}"
+    BRAVEHUB_EXTERNAL_NETWORK: "bravehub-core-services"
+
+- name: Obtain cluster dns suffix.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: |
+    . {{home_folder}}/instance-descriptor.sh && \
+    echo ${CLUSTER_SUFFIX}
+  register: cluster_dns_suffix_cmd
+
+- set_fact:
+    CLUSTER_DNS_SUFFIX: "{{cluster_dns_suffix_cmd.stdout}}"
+
+- name: Obtain cluster dns zone.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: |
+    . {{home_folder}}/instance-descriptor.sh && \
+    echo ${API_ZONE_NAME}
+  register: cluster_dns_name_cmd
+
+- set_fact:
+    CLUSTER_DNS_ZONE: "{{cluster_dns_name_cmd.stdout}}"
+
+- name: Create the bravehub nas data storage.
+  become: yes
+  become_user: root
+  become_method: sudo
+  file:
+    path: "{{shared_storage}}/bravehub-nas"
+    state: directory
+    group: root
+    owner: docker
+    mode: "u+rw,g+r,o-r"
+
+- name: Check if bravehub core services network exists.
+  become: yes
+  become_user: docker
+  become_method: sudo
+  shell:
+    docker network ls --filter="Name={{BRAVEHUB_EXTERNAL_NETWORK}}" | tail -n +2 | wc -l
+  register: network_exists_cmd
+
+- set_fact:
+    BRAVEHUB_EXTERNAL_NETWORK_EXISTS: "{{network_exists_cmd.stdout == \"1\"}}"
+
+- name: Create the bravehub core services network.
+  become: yes
+  become_user: docker
+  become_method: sudo
+  shell:
+    docker network create \
+      --driver=overlay \
+      {{BRAVEHUB_EXTERNAL_NETWORK}}
+  when: not BRAVEHUB_EXTERNAL_NETWORK_EXISTS
+
+- name: Deploy configuration api service.
+  include_role:
+    name: bravehub-services
+    tasks_from: deploy-service
+  vars:
+    BRAVEHUB_NAS_ROOT: "{{shared_storage}}/bravehub-nas"
+    BRAVEHUB_DEBUG: 0
+    BRAVEHUB_SUFFIX: "{{CLUSTER_DNS_SUFFIX}}"
+    HBASE_THRIFT_API: "hbase-thrift.{{CLUSTER_DNS_ZONE}}"
+    SERVICE_HOSTNAME: "{{docker.services.configuration_api.name}}.{{CLUSTER_DNS_ZONE}}"
+    SERVICE_NAME: "{{docker.services.configuration_api.name}}"
+    SERVICE_IMAGE: "{{DOCKER_REGISTRY_URI}}/{{docker.services.configuration_api.image_name}}:{{docker.services.configuration_api.image_version}}"
+    SERVICE_REPLICAS: "{{docker.services.configuration_api.replicas}}"
+    SERVICE_ENTRYPOINT: "{{docker.services.configuration_api.entrypoint}}"
+    SERVICE_ENVIRONMENT: "{{docker.services.configuration_api.environment}}"
+    SERVICE_PORTS: "{{docker.services.configuration_api.ports}}"
+    SERVICE_VOLUMES: "{{docker.services.configuration_api.volumes}}"
+
+- set_fact:
+    CONFIGURATION_APP_HOSTNAME: "{{docker.services.configuration_app.name}}.{{CLUSTER_DNS_ZONE}}"
+
+- name: Deploy configuration app service.
+  include_role:
+    name: bravehub-services
+    tasks_from: deploy-service
+  vars:
+    BRAVEHUB_DEBUG: 0
+    BRAVEHUB_SUFFIX: "{{CLUSTER_DNS_SUFFIX}}"
+    HBASE_THRIFT_API: "hbase-thrift.{{CLUSTER_DNS_ZONE}}"
+    SERVICE_HOSTNAME: "{{CONFIGURATION_APP_HOSTNAME}}"
+    SERVICE_NAME: "{{docker.services.configuration_app.name}}"
+    SERVICE_ENTRYPOINT:
+      - sh
+      - "-c"
+      - "cd /root && sed -i.bak s/localhost:5000/{{CONFIGURATION_APP_HOSTNAME}}:5000/g /usr/share/nginx/html/src/js/constants.js && nginx -g \"daemon off;\""
+    SERVICE_IMAGE: "{{DOCKER_REGISTRY_URI}}/{{docker.services.configuration_app.image_name}}:{{docker.services.configuration_app.image_version}}"
+    SERVICE_REPLICAS: "{{docker.services.configuration_app.replicas}}"
+    SERVICE_PORTS: "{{docker.services.configuration_app.ports}}"
+
+- name: Deploy provisioning api service.
+  include_role:
+    name: bravehub-services
+    tasks_from: deploy-service
+  vars:
+    BRAVEHUB_NAS_ROOT: "{{shared_storage}}/bravehub-nas"
+    BRAVEHUB_DEBUG: 0
+    BRAVEHUB_SUFFIX: "{{CLUSTER_DNS_SUFFIX}}"
+    HBASE_THRIFT_API: "hbase-thrift.{{CLUSTER_DNS_ZONE}}"
+    SERVICE_HOSTNAME: "{{docker.services.provisioning_api.name}}.{{CLUSTER_DNS_ZONE}}"
+    SERVICE_NAME: "{{docker.services.provisioning_api.name}}"
+    SERVICE_IMAGE: "{{DOCKER_REGISTRY_URI}}/{{docker.services.provisioning_api.image_name}}:{{docker.services.provisioning_api.image_version}}"
+    SERVICE_REPLICAS: "{{docker.services.provisioning_api.replicas}}"
+    SERVICE_ENTRYPOINT: "{{docker.services.provisioning_api.entrypoint}}"
+    SERVICE_ENVIRONMENT: "{{docker.services.provisioning_api.environment}}"
+    SERVICE_PORTS: "{{docker.services.provisioning_api.ports}}"

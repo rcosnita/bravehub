@@ -1,0 +1,35 @@
+version: '3'
+
+networks:
+  bravehub-core-services:
+    external:
+      name: {{BRAVEHUB_EXTERNAL_NETWORK}}
+
+services:
+  {{SERVICE_NAME}}:
+    image: {{SERVICE_IMAGE}}
+{% if SERVICE_ENTRYPOINT is defined %}    entrypoint:
+{% for cmd in SERVICE_ENTRYPOINT %}
+      - {{cmd}}
+{% endfor %}{% endif %}
+    environment:
+      BRAVEHUB_DEBUG: "{{BRAVEHUB_DEBUG}}"
+      BRAVEHUB_SUFFIX: "{{BRAVEHUB_SUFFIX}}"
+      HBASE_THRIFT_API: "{{HBASE_THRIFT_API}}"
+      SERVICE_HOSTNAME: "{{SERVICE_HOSTNAME}}"
+{% if SERVICE_ENVIRONMENT is defined %}{% for e in SERVICE_ENVIRONMENT %}
+      {{e.name}}: {{e.value}}
+{% endfor %}{% endif %}
+    ports:
+{% for p in SERVICE_PORTS %}
+      - "0.0.0.0:{{p.host_port}}:{{p.docker_port}}"
+{% endfor %}
+    networks:
+      - bravehub-core-services
+{% if SERVICE_VOLUMES is defined %}    volumes:
+{% for v in SERVICE_VOLUMES %}
+      - {{BRAVEHUB_NAS_ROOT}}{{v.host_path}}:{{v.docker_path}}
+{% endfor %}{% endif %}
+    deploy:
+      mode: replicated
+      replicas: {{SERVICE_REPLICAS}}

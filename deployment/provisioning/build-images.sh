@@ -73,3 +73,19 @@ cd ${WORKDIR}
 SETUP_DATABASE_IMAGE_NAME="bravehub/setup-database:${BRAVEHUB_VERSION}"
 cd ../bravehub && docker build -t ${SETUP_DATABASE_IMAGE_NAME} -f Dockerfile .
 upload_image ${SETUP_DATABASE_IMAGE_NAME} setup-database ${BRAVEHUB_VERSION}
+
+cd ${WORKDIR}
+CONFIGURATION_API_IMAGE_NAME="bravehub/configuration-api:${BRAVEHUB_VERSION}"
+cd ../../ && docker build -t ${CONFIGURATION_API_IMAGE_NAME} -f configuration-api/Dockerfile .
+upload_image ${CONFIGURATION_API_IMAGE_NAME} configuration-api ${BRAVEHUB_VERSION}
+
+cd ${WORKDIR}
+CONFIGURATION_APP_IMAGE_NAME="bravehub/configuration-app:${BRAVEHUB_VERSION}"
+cd ../../ && docker-compose build configuration-app.api.internal.bravehub-dev.com && cd ${WORKDIR}
+cd ../../configuration-app && docker build -t ${CONFIGURATION_APP_IMAGE_NAME} -f Dockerfile-prod .
+upload_image ${CONFIGURATION_APP_IMAGE_NAME} configuration-app ${BRAVEHUB_VERSION}
+
+cd ${WORKDIR}
+PROVISIONING_API_IMAGE_NAME="bravehub/provisioning-api:${BRAVEHUB_VERSION}"
+cd ../../ && docker build -t ${PROVISIONING_API_IMAGE_NAME} -f provisioning-api/Dockerfile .
+upload_image ${PROVISIONING_API_IMAGE_NAME} provisioning-api ${BRAVEHUB_VERSION}

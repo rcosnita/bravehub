@@ -23,5 +23,8 @@ RUN apk add --no-cache git && \
 RUN cd /root && \
     npm run lint
 
+RUN cd /root && \
+    node_modules/.bin/polymer build
+
 WORKDIR /root
 ENTRYPOINT [ "npm", "start" ]
