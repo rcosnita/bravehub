@@ -37,6 +37,52 @@ local:
         registry_auth_lockfile: docker_registry.lock
         registry_auth_ttl_seconds: 7200
         registry_shared_config: docker
+        services:
+          configuration_api:
+            replicas: 3
+            name: configuration-api
+            image_name: configuration-api
+            image_version: 0.1.0
+            entrypoint:
+              - sh
+              - "-c"
+              - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 0.1; done && gunicorn --bind 0.0.0.0:5000 src.wsgi:app"
+            environment:
+              - name: NAS_MOUNT
+                value: /root/nas
+              - name: PYTHONPATH
+                value: ".:src"
+            ports:
+              - host_port: 5000
+                docker_port: 5000
+            volumes:
+              - host_path: /
+                docker_path: /root/nas
+          configuration_app:
+            replicas: 3
+            name: configuration-app
+            image_name: configuration-app
+            image_version: 0.1.0
+            ports:
+              - host_port: 8080
+                docker_port: 80
+          provisioning_api:
+            replicas: 3
+            name: provisioning-api
+            image_name: provisioning-api
+            image_version: 0.1.0
+            entrypoint:
+              - sh
+              - "-c"
+              - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 0.1; done && gunicorn --bind 0.0.0.0:5000 src.wsgi:app"
+            environment:
+              - name: NAS_MOUNT
+                value: /root/nas
+              - name: PYTHONPATH
+                value: ".:src"
+            ports:
+              - host_port: 5020
+                docker_port: 5000
         swarm:
           master:
             max_masters: 11

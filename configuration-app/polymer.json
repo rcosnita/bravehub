@@ -2,7 +2,12 @@
   "entrypoint": "index.html",
   "shell": "src/configuration-app.html",
   "fragments": [
+    "src/configuration-api-details.html",
+    "src/configuration-create-projects.html",
     "src/configuration-manage-projects.html",
+    "src/configuration-project-details.html",
+    "src/configuration-projects-webgl.html",
+    "src/configuration-upload-file.html",
     "src/configuration-view404.html"
   ],
   "sources": [
@@ -11,7 +16,9 @@
   ],
   "extraDependencies": [
     "manifest.json",
-    "bower_components/webcomponentsjs/*.js"
+    "bower_components/webcomponentsjs/*.js",
+    "bower_components/rxjs/dist/*.js",
+    "bower_components/rx-dom/dist/*.js"
   ],
   "lint": {
     "rules": ["polymer-2"]
@@ -24,7 +31,9 @@
       "preset": "es6-bundled"
     },
     {
-      "preset": "es6-unbundled"
+      "preset": "es6-unbundled",
+      "addServiceWorker": false,
+      "addPushManifest": false
     }
   ]
 }

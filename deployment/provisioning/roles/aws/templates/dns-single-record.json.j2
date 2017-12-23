@@ -5,13 +5,13 @@
       "Action": "UPSERT",
       "ResourceRecordSet": {
         "Name": "{{DOMAIN_NAME}}",
-        "Type": "A",
+        {% if DOMAIN_CNAME is defined %}"Type": "CNAME"{% else %}"Type": "A"{% endif %},
         "SetIdentifier": "{{DOMAIN_NAME}}",
         "TTL": {{dns_ttl}},
         "Region": "{{AWS_REGION.stdout}}",
         "ResourceRecords": [
           {
-            "Value": "{{HOST_IP_STR}}"
+            "Value": "{% if DOMAIN_CNAME is defined %}{{DOMAIN_CNAME}}{% else %}{{HOST_IP_STR}}{% endif %}"
           }
         ]
       }

@@ -25,7 +25,7 @@
     - router-setup
     - router-dns-setup
 
-- name: Balance thrift servers.
+- name: Balance router servers.
   include_role:
     name: aws
     tasks_from: aws-dnsbalance
