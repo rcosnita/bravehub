@@ -35,7 +35,7 @@ services:
     entrypoint:
       - sh
       - "-c"
-      - "sed -i.bak s/localhost:5000/configuration-api.api.bravehub-dev.com/g /root/src/js/constants.js && npm start"
+      - "sed s/localhost:5000/configuration-api.api.bravehub-dev.com/g /root/src/js/constants.js.tpl > /root/src/js/constants.js && npm start"
     ports:
       - "127.0.0.1:9000:8080"
     volumes:

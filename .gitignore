@@ -8,3 +8,4 @@ node_modules
 .search-index
 *.tar.gz
 *.bak
+configuration-app/src/js/constants.js

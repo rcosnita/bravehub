@@ -23,9 +23,20 @@ The platform for planning, deploying and releasing new innovators ideas.
 
 In order to start the platform follow the steps below:
 
-```bash
-docker-compose up
-```
+1. Add the following lines to /etc/hosts.
+
+    ```
+    127.0.0.1       configuration-api.api.bravehub-dev.com
+    127.0.0.1       configuration-app.api.bravehub-dev.com
+    ```
+
+1. Start platform.
+
+    ```bash
+    docker-compose up
+    ```
+
+1. Open http://configuration-app.api.bravehub-dev.com
 
 This will start the platform and all APIs will be hot reloaded once you change the code.
 
