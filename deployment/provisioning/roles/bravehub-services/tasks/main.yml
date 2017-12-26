@@ -102,7 +102,7 @@
     SERVICE_ENTRYPOINT:
       - sh
       - "-c"
-      - "cd /root && sed -i.bak s/localhost:5000/{{CONFIGURATION_APP_HOSTNAME}}:5000/g /usr/share/nginx/html/src/js/constants.js && nginx -g \"daemon off;\""
+      - "cd /root && sed s/localhost:5000/{{CONFIGURATION_APP_HOSTNAME}}:5000/g /usr/share/nginx/html/src/js/constants.js.tpl > /usr/share/nginx/html/src/js/constants.js && nginx -g \"daemon off;\""
     SERVICE_IMAGE: "{{DOCKER_REGISTRY_URI}}/{{docker.services.configuration_app.image_name}}:{{docker.services.configuration_app.image_version}}"
     SERVICE_REPLICAS: "{{docker.services.configuration_app.replicas}}"
     SERVICE_PORTS: "{{docker.services.configuration_app.ports}}"
