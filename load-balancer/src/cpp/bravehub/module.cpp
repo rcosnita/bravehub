@@ -1,4 +1,5 @@
 #include "module.h"
+#include <iostream>
 #include <string>
 #include <thread>
 
@@ -75,19 +76,6 @@ char *ngx_http_bravehub_router_module_provisioning_path(ngx_conf_t *cf, ngx_comm
 
 namespace bravehub {
 namespace router {
-std::string GetProvisioningBody(const std::string& body)
-{
-  // TODO(cosnita) Move this to a separate service class which also provides error handling.
-  // TODO(cosnita) Use a C++ response parser if possible.
-  auto contentLengthPos = body.find("Content-Length: ") + std::string("Content-Length: ").length();
-  auto contentLengthEnd = body.find("\n", contentLengthPos);
-  auto contentLength = body.substr(contentLengthPos, contentLengthEnd - contentLengthPos);
-  auto contentLengthInt = std::stoi(contentLength);
-
-  auto responseBody = body.substr(body.length() - contentLengthInt);
-  return responseBody;
-}
-
 std::string GetProvisioningHostFromBody(const std::string& body)
 {
   rapidjson::Document document;
@@ -101,18 +89,10 @@ std::string GetProvisioningHostFromBody(const std::string& body)
 
 static ngx_int_t HandleProvisioningResponse(ngx_http_request_t *request, void *data, ngx_int_t rc)
 {
-  if (request == request->main) {
-    return NGX_OK;
-  }
-
-  size_t contentLength = sizeof(u_char) * (request->upstream->buffer.end - request->upstream->buffer.start + 1);
-  u_char* content = static_cast<u_char*>(NGX_CALLBACKS->AllocateMemory(request->pool, contentLength));
-  memcpy(content, request->upstream->buffer.start, contentLength - 1);
-
-  std::string contentStd(static_cast<char*>(static_cast<void*>(content)));
+  size_t contentLength = request->headers_out.content_length_n;
+  std::string contentStd(static_cast<char*>(static_cast<void*>(request->upstream->buffer.pos)), contentLength);
 
   NGX_CALLBACKS->Log(NGX_LOG_NOTICE, request->pool->log, "[Bravehub Router] Handling a new request ...");
-  contentStd = GetProvisioningBody(contentStd);
   auto newHost = GetProvisioningHostFromBody(contentStd);
 
   ngx_str_t uri = ToNgxString(request->pool, std::string("/proxy-request"), NGX_CALLBACKS);
@@ -148,7 +128,7 @@ ngx_int_t HandleRequest(ngx_http_request_t* request)
 
   NGX_CALLBACKS->DoRequest(request, &uri, &args, &subreq, continuation, NGX_HTTP_SUBREQUEST_IN_MEMORY);
 
-  return NGX_AGAIN;
+  return NGX_DONE;
 }
 }  // namespace router
 }  // namespace bravehub
