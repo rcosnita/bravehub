@@ -1,0 +1,10 @@
+{
+  "configuration-app.api": {
+    "prefix": "configuration-app.api.internal",
+    "port": 8080
+  },
+  "configuration-api.api": {
+    "prefix": "configuration-api.api.internal",
+    "port": 5000
+  }
+}
