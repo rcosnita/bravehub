@@ -1,3 +1,4 @@
+# pylint: disable=missing-docstring
 from src.app import app
 
 if __name__ == "__main__":
