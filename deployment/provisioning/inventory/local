@@ -46,7 +46,7 @@ local:
             entrypoint:
               - sh
               - "-c"
-              - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 0.1; done && gunicorn --bind 0.0.0.0:5000 src.wsgi:app"
+              - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 0.1; done && gunicorn --bind 0.0.0.0:5000 --threads 10 src.wsgi:app"
             environment:
               - name: NAS_MOUNT
                 value: /root/nas
@@ -74,7 +74,7 @@ local:
             entrypoint:
               - sh
               - "-c"
-              - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 0.1; done && gunicorn --bind 0.0.0.0:5000 src.wsgi:app"
+              - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 0.1; done && gunicorn --bind 0.0.0.0:5000 --threads 10 src.wsgi:app"
             environment:
               - name: NAS_MOUNT
                 value: /root/nas
