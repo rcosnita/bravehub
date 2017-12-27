@@ -23,8 +23,12 @@ from bravehub_shared.utils.row_locker import OptimisticLocker
 from src.provisioner.image_builder import ImageBuilderContext
 from src.provisioner.image_runner import ImageRunnerContext
 
-class Provisioner(object):
-  def __init__(self, sleeping_period, hbase_conn_pool,
+class Provisioner(object):  # pylint: disable=too-many-instance-attributes
+  """Provisioner provides the mechanism for polling new states which must be deployed in the
+  infrastructure. Based on the environment where it is running it might use various
+  image builders / runners."""
+
+  def __init__(self, sleeping_period, hbase_conn_pool,  # pylint: disable=too-many-arguments
                default_charset, config_api, config_api_version, image_builder, image_runner):
     self._provisioner_id = uuid.uuid4()
     self._sleeping_period = sleeping_period
@@ -64,9 +68,12 @@ class Provisioner(object):
     project_id = project[0]
     project_data = project[1]
 
-    with OptimisticLocker(self._hbase_conn_pool, self._default_charset, "provisioningtasks", project_id,
-                          when_acquired=lambda conn, tbl: tbl.put(project_id, { b"attrs:status": "PROCESSING" }),
-                          when_released=lambda conn, tbl: self._remove_task(project_id)) as lock:
+    with OptimisticLocker(self._hbase_conn_pool, self._default_charset, "provisioningtasks",
+                          project_id,
+                          when_acquired=lambda conn, tbl: \
+                            tbl.put(project_id, {b"attrs:status": "PROCESSING"}),
+                          when_released=lambda conn, tbl: \
+                            self._remove_task(project_id)) as lock:
       if not lock.locked:
         return
 
@@ -74,13 +81,13 @@ class Provisioner(object):
       print("Task {0} locked.".format(project_id))
 
       for state_key, state_id in [
-        (state_id, state_id.replace(b"states:", b"").decode(self._default_charset))
-        for state_id in project_data
-        if state_id.startswith(b"states:")]:
-          if self._process_state(project_id.decode(self._default_charset),
-                                 state_id,
-                                 json.loads(project_data[state_key].decode(self._default_charset))):
-            self._remove_state(project_id, state_key)
+          (state_id, state_id.replace(b"states:", b"").decode(self._default_charset))
+          for state_id in project_data
+          if state_id.startswith(b"states:")]:
+        if self._process_state(project_id.decode(self._default_charset),
+                               state_id,
+                               json.loads(project_data[state_key].decode(self._default_charset))):
+          self._remove_state(project_id, state_key)
 
   @HbaseConnectionManager()
   def _remove_state(self, project_id, state_key, hbase_manager=None):
@@ -88,18 +95,18 @@ class Provisioner(object):
 
     conn = hbase_manager.connection
     tasks_tbl = conn.table("provisioningtasks")
-    tasks_tbl.delete(project_id, [ state_key ])
+    tasks_tbl.delete(project_id, [state_key])
 
     # TODO(cosnita) Add proper logging.
     print("Removed state {0}".format(state_key.decode(self._default_charset)))
 
   @HbaseConnectionManager()
-  def _remove_task(self, project_id, hbase_manager=None):
+  def _remove_task(self, project_id, hbase_manager=None):  # pylint: disable=no-self-use
     """Once a locked task is completely processed we completely remove the record."""
 
     conn = hbase_manager.connection
     tasks_tbl = conn.table("provisioningtasks")
-    tasks_tbl.delete(project_id, [ b"attrs:lock", b"attrs:status" ])
+    tasks_tbl.delete(project_id, [b"attrs:lock", b"attrs:status"])
 
     # TODO(cosnita) Add proper logging.
     print("Task {0} removed.".format(project_id))
@@ -131,7 +138,7 @@ class Provisioner(object):
       image_tag = self._image_builder.build_image(image_ctx)
       runner_ctx = ImageRunnerContext(image_tag, api_data.body.exposedPorts)
       self._image_runner.run_image(image_ctx, runner_ctx)
-    except Exception as ex:
+    except Exception as ex:  # pylint: disable=broad-except
       # TODO(cosnita) add proper handling
       print(ex)
       print("Fatal error .... Skipping state {0} for now ...".format(state_id))
@@ -145,5 +152,5 @@ if __name__ == "__main__":
     "cluster_suffix": os.environ["BRAVEHUB_SUFFIX"]
   })
 
-  provisioner = ProvisionerContainer.provisioner()
-  provisioner.run()
+  PROVISIONER = ProvisionerContainer.provisioner()
+  PROVISIONER.run()

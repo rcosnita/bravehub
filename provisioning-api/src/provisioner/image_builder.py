@@ -22,26 +22,26 @@ class ImageBuilderContext(object):
                         if build["build"] == build_num][0]
 
   @property
-  def project_id(self):
+  def project_id(self):  # pylint: disable=missing-docstring
     return self._project_id
 
   @property
-  def api_id(self):
+  def api_id(self):  # pylint: disable=missing-docstring
     return self._api_id
 
   @property
-  def build_num(self):
+  def build_num(self):  # pylint: disable=missing-docstring
     return self._build_num
 
   @property
-  def config_data(self):
+  def config_data(self):  # pylint: disable=missing-docstring
     return self._config_data
 
   @property
-  def build_data(self):
+  def build_data(self):  # pylint: disable=missing-docstring
     return self._build_data
 
-class ImageBuilder(ABC):
+class ImageBuilder(ABC):  # pylint: disable=too-few-public-methods
   """Provides the interface which must be implemented by an image builder."""
 
   @abstractmethod
@@ -50,7 +50,7 @@ class ImageBuilder(ABC):
     is complete."""
     pass
 
-class DockerImageBuilder(ImageBuilder):
+class DockerImageBuilder(ImageBuilder):  # pylint: disable=too-few-public-methods
   """Provides a docker based image builder. It relies on the docker sdk for python."""
 
   def __init__(self, file_system, docker_client, default_charset):
@@ -59,8 +59,9 @@ class DockerImageBuilder(ImageBuilder):
     self._default_charset = default_charset
 
   def build_image(self, context):
-    """Based on the given context, this method aggregates all assets into a single image. Based on the image type,
-    it installs some dependencies so that the application will run as expected."""
+    """Based on the given context, this method aggregates all assets into a single image.
+    Based on the image type, it installs some dependencies so that the application will
+    run as expected."""
     image_folder = os.path.join("projects", context.project_id, "images", "apis", context.api_id,
                                 str(context.build_num))
     image_folder_abs = self._file_system.absolute_path(image_folder)
@@ -70,14 +71,16 @@ class DockerImageBuilder(ImageBuilder):
     self._generate_build_files(context, image_folder)
     self._generate_dockerfile(context, image_folder)
 
-    image_tag = "bravehub/{0}-{1}:{2}".format(context.project_id, context.api_id, context.build_num)
-    self._docker_client.images.build(path=image_folder_abs, tag=image_tag, forcerm=True, nocache=True,
-                                     quiet=False)
+    image_tag = "bravehub/{0}-{1}:{2}".format(context.project_id, context.api_id,
+                                              context.build_num)
+    self._docker_client.images.build(path=image_folder_abs, tag=image_tag, forcerm=True,
+                                     nocache=True, quiet=False)
 
     return image_tag
 
   def _generate_build_files(self, context, image_folder):
-    """Download all binary files, configuration and assets which must be made available to the container."""
+    """Download all binary files, configuration and assets which must be made available
+    to the container."""
 
     # Download environment variables
     self._generate_env_file(context.build_data.configuration.environment, image_folder)
@@ -89,13 +92,14 @@ class DockerImageBuilder(ImageBuilder):
     self._download_droplet(context.build_data.configuration.droplet, image_folder)
 
   def _generate_env_file(self, env_data, image_folder):
-    """Based on the environemnt variables returned by configuration api we generate a script containing
-    the adequate exports."""
+    """Based on the environemnt variables returned by configuration api we generate
+    a script containing the adequate exports."""
     # TODO(cosnita) make sure the file is compatible with the underlining OS.
 
     content = "\n".join([
-                    "export {key}={value}".format(key=data["key"], value=data["value"])
-                    for data in env_data])
+      "export {key}={value}".format(key=data["key"], value=data["value"])
+      for data in env_data
+    ])
 
     file_name = "bravehub-environment.sh"
     self._file_system.store(file_name, io.BytesIO(bytes(content, self._default_charset)),
@@ -123,7 +127,7 @@ class DockerImageBuilder(ImageBuilder):
 
     os.remove(droplet_dest)
 
-  def _generate_dockerfile(self, context, image_folder):
+  def _generate_dockerfile(self, context, image_folder):  # pylint: disable=unused-argument
     """Generate a compatible docker file for the given context."""
 
     # TODO(cosnita) based on the context generate a docker file from plugins.
