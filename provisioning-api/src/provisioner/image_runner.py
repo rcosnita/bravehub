@@ -5,7 +5,6 @@ import json
 
 from bravehub_shared.utils.hbase_connection_manager import HbaseConnectionManager
 from bravehub_shared.utils.row_locker import OptimisticLocker
-from src.provisioner.image_builder import ImageBuilderContext
 
 class ImageRunnerContext(object):
   """Provides a model for passing all required attributes for running a service."""
@@ -15,11 +14,11 @@ class ImageRunnerContext(object):
     self._public_ports = public_ports
 
   @property
-  def image_tag(self):
+  def image_tag(self):  # pylint: disable=missing-docstring
     return self._image_tag
 
   @property
-  def public_ports(self):
+  def public_ports(self):  # pylint: disable=missing-docstring
     return self._public_ports
 
 class ImageRunner(ABC):
@@ -31,18 +30,20 @@ class ImageRunner(ABC):
     self._default_charset = default_charset
 
   @property
-  def conn_pool(self): # pylint: disable=missing-docstring
+  def conn_pool(self):  # pylint: disable=missing-docstring
     return self._hbase_conn_pool
 
   def run_image(self, image_ctx, runner_ctx):
+    """Provides the algorithm for running a docker image based on the given context."""
+
     public_ports = runner_ctx.public_ports
 
-    port_mappings = { "{0}/tcp".format(port): None  for port in public_ports }
+    port_mappings = {"{0}/tcp".format(port): None  for port in public_ports}
     self._choose_ports(image_ctx, runner_ctx, port_mappings)
     network_name = self._create_network(image_ctx, runner_ctx, port_mappings)
     self._deploy_image(image_ctx, runner_ctx, port_mappings, network_name)
 
-  def _choose_ports(self, image_ctx, runner_ctx, port_mappings):
+  def _choose_ports(self, image_ctx, runner_ctx, port_mappings):  # pylint: disable=unused-argument
     for port in port_mappings.keys():
       public_port = self._reserve_next_free_port(image_ctx)
 
@@ -90,8 +91,10 @@ class ImageRunner(ABC):
     port = port_id_str[port_id_str.rfind("-") + 1:]
     expected_status = bytes(image_ctx.api_id, self._default_charset)
 
-    with OptimisticLocker(self._hbase_conn_pool, self._default_charset, "provisioningmetaports", port_id,
-                          when_acquired=lambda conn, tbl: tbl.put(port_id, { b"attrs:status": expected_status })) as lock:
+    with OptimisticLocker(self._hbase_conn_pool, self._default_charset, "provisioningmetaports",
+                          port_id,
+                          when_acquired=lambda conn, tbl: \
+                            tbl.put(port_id, {b"attrs:status": expected_status})) as lock:
       if not lock.locked:
         return
 
@@ -99,8 +102,8 @@ class ImageRunner(ABC):
 
   @HbaseConnectionManager()
   def _save_port_mappings(self, image_ctx, port_mappings, hbase_manager=None):
-    """Stores the association between apis and reserved ports. This actually accelerates the provisioning
-    api responsible for retrieving the location of a specific domain and path."""
+    """Stores the association between apis and reserved ports. This actually accelerates
+    the provisioning api responsible for retrieving the location of a specific domain and path."""
 
     conn = hbase_manager.connection
     mapping_tbl = conn.table("provisioningmetaportsmapping")
@@ -122,7 +125,7 @@ class DockerEngineImageRunner(ImageRunner):
 
     existing_network = self._docker_client.networks.list(names=[network_name])
 
-    if len(existing_network) == 0:
+    if not existing_network:
       self._docker_client.networks.create(network_name, driver="bridge")
 
     return network_name

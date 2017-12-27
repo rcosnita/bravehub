@@ -15,9 +15,9 @@ from src.provisioner.image_builder import DockerImageBuilder
 from src.provisioner.image_runner import DockerEngineImageRunner
 from src.provisioner.provisioner import Provisioner
 
-class ProvisionerContainer(DeclarativeContainer):
+class ProvisionerContainer(DeclarativeContainer):  # pylint: disable=too-few-public-methods
   """Provides all the bindings required by the provisioner service."""
-  
+
   provisioner_meta = DynamicObject({
     "version": {
       "major": 0,

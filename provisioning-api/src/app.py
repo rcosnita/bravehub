@@ -1,41 +1,45 @@
+"""
+The main entry point for the provisioning api. It bootstraps all routes and related services.
+"""
+
 import json
 import os
 from flask import Flask
 
 from flask import request
 
-app = Flask(__name__)
+app = Flask(__name__)  # pylint: disable=invalid-name
 
 CURR_FOLDER = os.path.dirname(os.path.realpath(__file__))
 PLATFORM_SUFFIX = os.environ["BRAVEHUB_SUFFIX"]
 PLATFORM_APIS_FILE = "platform-apis.json"
 
-core_apis_config = {}
+CORE_APIS_CONFIG = {}
 
 @app.before_first_request
-def init_app():
-  global core_apis_config
+def init_app():  # pylint: disable=missing-docstring
+  global CORE_APIS_CONFIG  # pylint: disable=global-statement
 
   with open(os.path.join(CURR_FOLDER, PLATFORM_APIS_FILE)) as core_apis_file:
-    core_apis_config = json.load(core_apis_file)
-    core_apis_config = {
-       "{0}.{1}".format(public_domain, PLATFORM_SUFFIX): \
+    CORE_APIS_CONFIG = json.load(core_apis_file)
+    CORE_APIS_CONFIG = {
+      "{0}.{1}".format(public_domain, PLATFORM_SUFFIX): \
         {
           "workerDomain": "{0}.{1}".format(cfg["prefix"], PLATFORM_SUFFIX),
           "workerPort": cfg["port"]
         }
-       for public_domain, cfg in core_apis_config.items()
+      for public_domain, cfg in CORE_APIS_CONFIG.items()
     }
 
 @app.route("/")
-def hello():
+def hello():  # pylint: disable=missing-docstring
   return "provisioning-api:0.1.0"
 
 def _serve_platform_api(domain):
   """In case the given domain is a platform service domain, route the request to the platform
   infrastructure."""
 
-  platform_api = core_apis_config.get(domain)
+  platform_api = CORE_APIS_CONFIG.get(domain)
   if not platform_api:
     return
 
@@ -45,8 +49,17 @@ def _serve_platform_api(domain):
 
 @app.route("/v1/domains")
 def resolve_domains():
+  """Returns information about the given domain and path. It first searches the list of
+  platform apis and then user defined domains and apis.
+
+  In bravehub, it is possible to have a path belonging to a domain hosted on a completely
+  separated infrastructure than other paths belonging to the same domain. This is how
+  micro services are expected to work.
+  """
+
   domain = request.args.get("domain", "")
-  path = request.args.get("path", "")  # TODO(cosnita) must be used by @aturlac.
+  path = request.args.get("path", "")  # pylint: disable=unused-variable
+  # TODO(cosnita) must be used by @aturlac.
 
   platform_api = _serve_platform_api(domain)
   if platform_api:
