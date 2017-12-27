@@ -25,12 +25,118 @@
     - router-setup
     - router-dns-setup
 
-- name: Balance router servers.
+- name: Obtain cluster suffix.
+  shell: . {{home_folder}}/instance-descriptor.sh && echo ${CLUSTER_SUFFIX}
+  register: CLUSTER_SUFFIX_CMD
+  tags:
+    - router-setup
+    - router-dns-setup
+
+- set_fact:
+    CLUSTER_SUFFIX: "{{CLUSTER_SUFFIX_CMD.stdout}}"
+
+- name: Create nginx user.
+  become: yes
+  become_user: root
+  become_method: sudo
+  user:
+    name: nginx
+    uid: "{{router.uid}}"
+    comment: "Nginx user."
+    state: present
+    group: docker
+    home: "{{router.home_folder}}"
+  tags:
+    - router-setup
+
+- name: Detect the current list of nameservers.
+  become: yes
+  become_user: root
+  become_method: sudo
+  shell: |
+    cat /etc/resolv.conf | grep nameserver | tr -d 'nameserver ' | tr '\n' ' '
+  register: DNS_RESOLVERS_CMD
+  tags:
+    - router-setup
+
+- set_fact:
+    DNS_RESOLVERS: "{{DNS_RESOLVERS_CMD.stdout}}"
+
+- name: Upload nginx configuration.
+  become: yes
+  become_user: nginx
+  become_method: sudo
+  template:
+    src: home/nginx/nginx.conf.j2
+    dest: "{{router.home_folder}}/nginx.conf"
+    owner: nginx
+    mode: 0760
+  tags:
+    - router-setup
+
+- name: Upload router manage.sh script.
+  become: yes
+  become_user: nginx
+  become_method: sudo
+  template:
+    src: home/nginx/manage.sh.j2
+    dest: "{{router.home_folder}}/manage.sh"
+    owner: nginx
+    mode: 0760
+  tags:
+    - router-setup
+
+- name: Authenticate nginx docker engine to all registries.
+  become: yes
+  become_user: root
+  become_method: sudo
+  include_role:
+    name: docker-setup
+    tasks_from: registry-auth
+  vars:
+    AUTH_HOME_DESTINATION: "{{router.home_folder}}"
+    AUTH_HOME_USER: nginx
+
+- name: Upload router systemd unit.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: etc/systemd/system/bravehub-router.service.j2
+    dest: "/etc/systemd/system/bravehub-router.service"
+  tags:
+    - router-setup
+
+- name: Start router systemd unit.
+  become: yes
+  become_user: root
+  become_method: sudo
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: bravehub-router
+    state: restarted
+  tags:
+    - router-setup
+
+- name: Balance internal router servers.
   include_role:
     name: aws
     tasks_from: aws-dnsbalance
   vars:
-    BALANCED_ROLE: "{{router_balanced_name}}"
-    SERVER_TAGGED_ROLE: "{{router_instance_role}}"
+    BALANCED_ROLE: "{{router.balanced_name}}"
+    SERVER_TAGGED_ROLE: "{{router.instance_role}}"
   tags:
     - router-setup
+
+- name: Balance public router servers.
+  include_role:
+    name: aws
+    tasks_from: aws-dnsbalance
+  vars:
+    BALANCED_ROLE: "{{router.balanced_name}}"
+    SERVER_TAGGED_ROLE: "{{router.instance_role}}"
+    PUBLIC_DNS: true
+  tags:
+    - router-setup
+

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+. {{home_folder}}/instance-descriptor.sh
+IMAGE=${DOCKER_REGISTRY}/${Env}/{{router.image}}:{{router.version}}
+
+ACTION=${1}
+
+function start_container {
+  docker run --network=host -p 0.0.0.0:80:8080 \
+    -v {{router.home_folder}}/nginx.conf:/etc/nginx/nginx.conf \
+    --entrypoint "/usr/sbin/nginx" \
+    ${IMAGE} 1> /dev/null
+}
+
+function stop_container {
+    docker ps | grep "${IMAGE}" | awk '{print $1}' | xargs -I{} docker stop {} || true
+}
+
+case ${ACTION} in
+    start)
+        start_container
+        ;;
+    stop)
+        stop_container
+        ;;
+    *)
+        echo "Unsupported action: ${ACTION}"
+        exit -1
+esac

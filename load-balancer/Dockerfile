@@ -65,5 +65,10 @@ RUN apk add --no-cache alpine-sdk pcre-dev openssl-dev libxml2-dev libxslt-dev g
     chown -R nginx:nginx /var/cache/nginx/client_temp && \
     ln -s /usr/lib/nginx/modules /etc/nginx/modules
 
+FROM nginx:1.13.5-alpine
+RUN apk add --no-cache libstdc++
+COPY --from=0 /usr/local/lib/libbravehub-router.so /usr/local/lib/libbravehub-router.so
+COPY --from=0 /usr/lib/nginx/modules/ngx_http_bravehub_router_module.so /usr/lib/nginx/modules/ngx_http_bravehub_router_module.so
+
 WORKDIR /root
 ENTRYPOINT /usr/sbin/nginx

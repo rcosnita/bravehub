@@ -4,11 +4,11 @@
     {
       "Action": "UPSERT",
       "ResourceRecordSet": {
-        "Name": "{{BALANCED_ROLE}}.{{API_ZONE_NAME.stdout}}",
+        "Name": "{{BALANCED_ROLE}}.{% if PUBLIC_DNS is defined and PUBLIC_DNS %}{{CLUSTER_SUFFIX}}{% else %}{{API_ZONE_NAME_STR}}{% endif %}",
         "Type": "A",
-        "SetIdentifier": "{{BALANCED_ROLE}}.{{API_ZONE_NAME.stdout}}",
+        "SetIdentifier": "{{BALANCED_ROLE}}.{% if PUBLIC_DNS is defined and PUBLIC_DNS %}{{CLUSTER_SUFFIX}}{% else %}{{API_ZONE_NAME_STR}}{% endif %}",
         "TTL": {{dns_ttl}},
-        "Region": "{{AWS_REGION.stdout}}",
+        "Region": "{{AWS_REGION_STR}}",
         "ResourceRecords": [
           {% for balanced_ip in BALANCED_IPS.stdout_lines %}
           {

@@ -5,4 +5,15 @@
     dest: "{{home_folder}}/{{DOMAIN_NAME}}.json"
 
 - name: "Upsert the {{DOMAIN_NAME}} record set."
-  shell: . {{home_folder}}/instance-descriptor.sh && aws route53 change-resource-record-sets --hosted-zone-id ${API_ZONE_ID} --change-batch file://{{home_folder}}/{{DOMAIN_NAME}}.json
+  shell: |
+    . {{home_folder}}/instance-descriptor.sh && \
+    aws route53 change-resource-record-sets --hosted-zone-id ${API_ZONE_ID} \
+    --change-batch file://{{home_folder}}/{{DOMAIN_NAME}}.json
+  when: PUBLIC_DNS is not defined or not PUBLIC_DNS
+
+- name: "Upsert the {{DOMAIN_NAME}} record set."
+  shell: |
+    . {{home_folder}}/instance-descriptor.sh && \
+    aws route53 change-resource-record-sets --hosted-zone-id ${API_ZONE_PUBLIC_ID} \
+    --change-batch file://{{home_folder}}/{{DOMAIN_NAME}}.json
+  when: PUBLIC_DNS is defined and PUBLIC_DNS
