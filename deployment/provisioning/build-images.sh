@@ -89,3 +89,8 @@ cd ${WORKDIR}
 PROVISIONING_API_IMAGE_NAME="bravehub/provisioning-api:${BRAVEHUB_VERSION}"
 cd ../../ && docker build -t ${PROVISIONING_API_IMAGE_NAME} -f provisioning-api/Dockerfile .
 upload_image ${PROVISIONING_API_IMAGE_NAME} provisioning-api ${BRAVEHUB_VERSION}
+
+cd ${WORKDIR}
+ROUTER_IMAGE_NAME="bravehub/router:${BRAVEHUB_VERSION}"
+cd ../../load-balancer && docker build -t ${ROUTER_IMAGE_NAME} -f Dockerfile .
+upload_image ${ROUTER_IMAGE_NAME} router ${BRAVEHUB_VERSION}

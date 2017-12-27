@@ -428,6 +428,23 @@ Resources:
       DestinationCidrBlock: "0.0.0.0/0"
       RouteTableId: !Ref RegionalVpcRouterTable
       GatewayId: !Ref RegionalVpcIgw
+  RegionalVpcPublicDns:
+    Type: "AWS::Route53::HostedZone"
+    Properties:
+      HostedZoneConfig:
+        Comment: Public zone used for platform incoming internet traffic.
+      HostedZoneTags:
+        - Key: Name
+          Value: !Ref DnsSuffix
+        - Key: "bravehub:vpc"
+          Value: !Ref RegionalVpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "public-service-discovery"
+      Name: !Ref DnsSuffix
   RegionalVpcInternalApiDns:
     Type: "AWS::Route53::HostedZone"
     Properties:
@@ -435,7 +452,7 @@ Resources:
         Comment: Internal api zone used for platform service discovery.
       HostedZoneTags:
         - Key: Name
-          Value: !Join [ "", [ "api.internal.", !Ref DnsSuffix, ".com" ] ]
+          Value: !Join [ "", [ "api.internal.", !Ref DnsSuffix ] ]
         - Key: "bravehub:vpc"
           Value: !Ref RegionalVpc
         - Key: "bravehub:stack"
@@ -636,7 +653,9 @@ Resources:
                 Action:
                   - "route53:GetHostedZone"
                   - "route53:ChangeResourceRecordSets"
-                Resource: !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcInternalApiDns ] ]
+                Resource:
+                  - !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcInternalApiDns ] ]
+                  - !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcPublicDns ] ]
         - PolicyName: "cloudformation-permissions"
           PolicyDocument:
             Version: "2012-10-17"
@@ -696,6 +715,7 @@ Resources:
               - !Join ["", [ "echo 'export DOCKER_REGISTRY_ID=", !Ref StackDockerRegistryId, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export CLUSTER_SUFFIX=", !Ref DnsSuffix, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export API_ZONE_PUBLIC_ID=", !Ref RegionalVpcPublicDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
               - "chmod u+x bravehub-bootstrap.sh"
@@ -770,6 +790,7 @@ Resources:
               - !Join ["", [ "echo 'export DOCKER_REGISTRY_ID=", !Ref StackDockerRegistryId, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export CLUSTER_SUFFIX=", !Ref DnsSuffix, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export API_ZONE_PUBLIC_ID=", !Ref RegionalVpcPublicDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
               - "chmod u+x bravehub-bootstrap.sh"
@@ -1010,7 +1031,9 @@ Resources:
                 Action:
                   - "route53:GetHostedZone"
                   - "route53:ChangeResourceRecordSets"
-                Resource: !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcInternalApiDns ] ]
+                Resource:
+                  - !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcInternalApiDns ] ]
+                  - !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcPublicDns ] ]
         - PolicyName: "cloudformation-permissions"
           PolicyDocument:
             Version: "2012-10-17"
@@ -1065,6 +1088,7 @@ Resources:
               - !Join ["", [ "echo 'export DOCKER_REGISTRY_ID=", !Ref StackDockerRegistryId, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export CLUSTER_SUFFIX=", !Ref DnsSuffix, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export API_ZONE_PUBLIC_ID=", !Ref RegionalVpcPublicDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
               - "chmod u+x bravehub-bootstrap.sh"
@@ -1273,7 +1297,9 @@ Resources:
                 Action:
                   - "route53:GetHostedZone"
                   - "route53:ChangeResourceRecordSets"
-                Resource: !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcInternalApiDns ] ]
+                Resource:
+                  - !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcInternalApiDns ] ]
+                  - !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref RegionalVpcPublicDns ] ]
         - PolicyName: "cloudformation-permissions"
           PolicyDocument:
             Version: "2012-10-17"
@@ -1328,6 +1354,7 @@ Resources:
               - !Join ["", [ "echo 'export DOCKER_REGISTRY_ID=", !Ref StackDockerRegistryId, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export CLUSTER_SUFFIX=", !Ref DnsSuffix, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export API_ZONE_PUBLIC_ID=", !Ref RegionalVpcPublicDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
               - "chmod u+x bravehub-bootstrap.sh"
@@ -1397,6 +1424,7 @@ Resources:
               - !Join ["", [ "echo 'export DOCKER_REGISTRY_ID=", !Ref StackDockerRegistryId, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export CLUSTER_SUFFIX=", !Ref DnsSuffix, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref RegionalVpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+              - !Join ["", [ "echo 'export API_ZONE_PUBLIC_ID=", !Ref RegionalVpcPublicDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
               - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
               - "chmod u+x bravehub-bootstrap.sh"
@@ -1479,3 +1507,5 @@ Resources:
 Outputs:
   SharedStorageDns:
     Value: !Join ["", [ !Ref RegionalVpcFileSystemStorage, ".efs.", !Ref "AWS::Region", ".amazonaws.com" ]]
+  PublicDnsNameServer:
+    Value: !Join [";", !GetAtt ["RegionalVpcPublicDns", "NameServers"] ]

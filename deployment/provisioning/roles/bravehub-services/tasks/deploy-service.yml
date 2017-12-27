@@ -40,3 +40,16 @@
   vars:
     DOMAIN_NAME: "{{SERVICE_HOSTNAME}}"
     DOMAIN_CNAME: "swarm-workers.{{CLUSTER_DNS_ZONE}}"
+
+- name: "Set {{SERVICE_NAME}} ---> {{SERVICE_HOSTNAME_PUBLIC}} dns entry."
+  become: yes
+  become_user: root
+  become_method: sudo
+  include_role:
+    name: aws
+    tasks_from: aws-setrecord.yml
+  vars:
+    DOMAIN_NAME: "{{SERVICE_HOSTNAME_PUBLIC}}"
+    DOMAIN_CNAME: "router.{{CLUSTER_DNS_SUFFIX}}"
+    PUBLIC_DNS: true
+  when: SERVICE_HOSTNAME_PUBLIC is defined

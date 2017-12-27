@@ -1,5 +1,5 @@
 {
-  "Comment": "Update the router settings",
+  "Comment": "Update the {{DOMAIN_NAME}} settings",
   "Changes": [
     {
       "Action": "UPSERT",
@@ -8,7 +8,7 @@
         {% if DOMAIN_CNAME is defined %}"Type": "CNAME"{% else %}"Type": "A"{% endif %},
         "SetIdentifier": "{{DOMAIN_NAME}}",
         "TTL": {{dns_ttl}},
-        "Region": "{{AWS_REGION.stdout}}",
+        "Region": "{{AWS_REGION_STR}}",
         "ResourceRecords": [
           {
             "Value": "{% if DOMAIN_CNAME is defined %}{{DOMAIN_CNAME}}{% else %}{{HOST_IP_STR}}{% endif %}"

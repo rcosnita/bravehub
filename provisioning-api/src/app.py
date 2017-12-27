@@ -47,7 +47,7 @@ def _serve_platform_api(domain):
                             status=200,
                             mimetype="application/json")
 
-@app.route("/v1/domains")
+@app.route("/v0.1/domains")
 def resolve_domains():
   """Returns information about the given domain and path. It first searches the list of
   platform apis and then user defined domains and apis.
