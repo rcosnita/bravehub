@@ -1,0 +1,11 @@
+[Unit]
+Description=Bravehub router management script.
+Requires=network.target docker.service
+
+[Service]
+User=nginx
+Group=docker
+Type=idle
+ExecStart={{router.home_folder}}/manage.sh start
+ExecStop={{router.home_folder}}/manage.sh stop
+WorkingDirectory={{router.home_folder}}

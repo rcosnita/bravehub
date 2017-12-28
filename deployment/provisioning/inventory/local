@@ -28,9 +28,15 @@ local:
       hbase_thrift_port: 9090
       hbase_thrift_infoport: 9100
 
-      router_balanced_name: "router"
-      router_instance_role: "routing-api-gateway"
       bravehub_version: 0.1.0
+
+      router:
+        home_folder: /home/nginx
+        uid: 2030
+        balanced_name: "router"
+        instance_role: "routing-api-gateway"
+        image: router
+        version: 0.1.0
 
       docker:
         docker_home: /home/docker

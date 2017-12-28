@@ -68,6 +68,10 @@
       {{BRAVEHUB_EXTERNAL_NETWORK}}
   when: not BRAVEHUB_EXTERNAL_NETWORK_EXISTS
 
+- set_fact:
+    CONFIGURATION_API_HOSTNAME: "{{docker.services.configuration_api.name}}.{{CLUSTER_DNS_ZONE}}"
+    CONFIGURATION_API_HOSTNAME_PUBLIC: "{{docker.services.configuration_api.name}}.api.{{CLUSTER_DNS_SUFFIX}}"
+
 - name: Deploy configuration api service.
   include_role:
     name: bravehub-services
@@ -77,7 +81,8 @@
     BRAVEHUB_DEBUG: 0
     BRAVEHUB_SUFFIX: "{{CLUSTER_DNS_SUFFIX}}"
     HBASE_THRIFT_API: "hbase-thrift.{{CLUSTER_DNS_ZONE}}"
-    SERVICE_HOSTNAME: "{{docker.services.configuration_api.name}}.{{CLUSTER_DNS_ZONE}}"
+    SERVICE_HOSTNAME: "{{CONFIGURATION_API_HOSTNAME}}"
+    SERVICE_HOSTNAME_PUBLIC: "{{CONFIGURATION_API_HOSTNAME_PUBLIC}}"
     SERVICE_NAME: "{{docker.services.configuration_api.name}}"
     SERVICE_IMAGE: "{{DOCKER_REGISTRY_URI}}/{{docker.services.configuration_api.image_name}}:{{docker.services.configuration_api.image_version}}"
     SERVICE_REPLICAS: "{{docker.services.configuration_api.replicas}}"
@@ -88,6 +93,7 @@
 
 - set_fact:
     CONFIGURATION_APP_HOSTNAME: "{{docker.services.configuration_app.name}}.{{CLUSTER_DNS_ZONE}}"
+    CONFIGURATION_APP_HOSTNAME_PUBLIC: "{{docker.services.configuration_app.name}}.api.{{CLUSTER_DNS_SUFFIX}}"
 
 - name: Deploy configuration app service.
   include_role:
@@ -98,11 +104,12 @@
     BRAVEHUB_SUFFIX: "{{CLUSTER_DNS_SUFFIX}}"
     HBASE_THRIFT_API: "hbase-thrift.{{CLUSTER_DNS_ZONE}}"
     SERVICE_HOSTNAME: "{{CONFIGURATION_APP_HOSTNAME}}"
+    SERVICE_HOSTNAME_PUBLIC: "{{CONFIGURATION_APP_HOSTNAME_PUBLIC}}"
     SERVICE_NAME: "{{docker.services.configuration_app.name}}"
     SERVICE_ENTRYPOINT:
       - sh
       - "-c"
-      - "cd /root && sed s/localhost:5000/{{CONFIGURATION_APP_HOSTNAME}}:5000/g /usr/share/nginx/html/src/js/constants.js.tpl > /usr/share/nginx/html/src/js/constants.js && nginx -g \"daemon off;\""
+      - "cd /root && sed s/localhost:5000/{{CONFIGURATION_API_HOSTNAME_PUBLIC}}/g /usr/share/nginx/html/src/js/constants.js.tpl > /usr/share/nginx/html/src/js/constants.js && nginx -g \"daemon off;\""
     SERVICE_IMAGE: "{{DOCKER_REGISTRY_URI}}/{{docker.services.configuration_app.image_name}}:{{docker.services.configuration_app.image_version}}"
     SERVICE_REPLICAS: "{{docker.services.configuration_app.replicas}}"
     SERVICE_PORTS: "{{docker.services.configuration_app.ports}}"
