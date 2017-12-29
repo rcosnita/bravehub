@@ -4,6 +4,7 @@ set -eo pipefail
 STACK_CONFIG_FILE=${1:-envs/stage.json}
 STACK_CFN_S3=${2:-bravehub-bootstrap-files-cfn}
 STACK_ACTION=${3:-update-stack}
+STACK_PUBLISH_IMAGES=${4:-false}
 STACK_WAIT_ACTION=stack-update-complete
 
 if [[ ${STACK_ACTION} == "create-stack" ]]; then
@@ -90,5 +91,8 @@ function publish_docker_images {
   cd ${WORKDIR}
 }
 
-publish_docker_images
+if [[ ${STACK_PUBLISH_IMAGES} = true ]]; then
+  publish_docker_images
+fi
+
 create_stack
