@@ -1,0 +1,337 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Bravehub AWS swarm worker infrastructure deployment.
+Parameters:
+  AvailabilityZone1:
+    Type: String
+    Description: The first availability zone where the platform is currently deployed.
+  AvailabilityZone2:
+    Type: String
+    Description: The second availability zone where the platform is currently deployed.
+  BravehubEnv:
+    Type: String
+    Description: The bravehub environment for which we create the swarm worker.
+  RouterSecurityGroup:
+    Type: String
+    Description: The router security group.
+  StackCidrPrefix:
+    Type: String
+    Description: The CIDR prefix used for determining the location of the swarm worker.
+  StackName:
+    Type: String
+    Description: The current stack name for which we create the swarm worker.
+  SwarmMasterSecurityGroup:
+    Type: String
+    Description: The security group identifier used by the swarm master nodes.
+  SwarmWorkerCapacity:
+    Type: Number
+    Description: The number of workers we want in the infrastructure.
+  SwarmWorkerCapacitySpot:
+    Type: Number
+    Description: The number of spot workers we want in the infrastructure.
+  SwarmWorkerImage:
+    Type: String
+    Description: The ami image we want to use for swarm worker nodes.
+  SwarmWorkerInstanceType:
+    Type: String
+    Description: The instance type we want to use for swarm workers.
+  SwarmWorkerSecurityGroups:
+    Type: String
+    Description: A list of comma separated security groups we want to apply to the swarm workers.
+  SwarmWorkerSpotPrice:
+    Type: Number
+    Description: The price we are willing to pay for spot instances.
+  SwarmWorkerUserData:
+    Type: String
+    Description: The swarm worker user data script used to bootstrap the instances.
+  SwarmWorkerUserDataSecurityGroup:
+    Type: String
+    Description: The security work generated for each worker by the userdata stack.
+  Vpc:
+    Type: String
+    Description: The vpc for which we create the swarm worker components.
+  VpcInternalApiDns:
+    Type: String
+    Description: The internal dns zone available for the platform.
+  VpcPublicDns:
+    Type: String
+    Description: The public dns zone available for the platform.
+  VpcNat:
+    Type: String
+    Description: The vpc nat which can be used by swarm workers to access the internet.
+Resources:
+  VpcSwarmWorkerTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: swarm-worker-routing-table
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-worker"
+  VpcSwarmMasterWorkerInternetAccess:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref VpcSwarmWorkerTable
+      NatGatewayId: !Ref VpcNat
+  VpcSwarmWorkerSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone1
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".21.0/24" ] ]
+      MapPublicIpOnLaunch: "false"
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: subnet-swarm-worker-1
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-worker"
+  VpcSwarmWorkerSubnet1Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref VpcSwarmWorkerTable
+      SubnetId: !Ref VpcSwarmWorkerSubnet1
+  VpcSwarmWorkerSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone2
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".22.0/24" ] ]
+      MapPublicIpOnLaunch: "false"
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: subnet-swarm-worker-2
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-worker"
+  VpcSwarmWorkerSubnet2Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref VpcSwarmWorkerTable
+      SubnetId: !Ref VpcSwarmWorkerSubnet2
+  SwarmWorkerSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: swarm-worker-sg
+      GroupDescription: Security group for controlling inbound / outbound rules for the docker swarm worker nodes.
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 4789
+          ToPort: 4789
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 7946
+          ToPort: 7946
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 7946
+          ToPort: 7946
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 7946
+          ToPort: 7946
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          SourceSecurityGroupId: !Ref SwarmWorkerUserDataSecurityGroup
+        - IpProtocol: udp
+          FromPort: 0
+          ToPort: 65535
+          SourceSecurityGroupId: !Ref SwarmWorkerUserDataSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: swarm-worker-sg
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-worker"
+  SwarmWorkerAutoScalingIamRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "ec2.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: "ec2-permissions"
+          PolicyDocument:
+            Version : "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "ec2:DescribeInstances"
+                Resource: "*"
+        - PolicyName: "route53-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "route53:GetHostedZone"
+                  - "route53:ChangeResourceRecordSets"
+                Resource:
+                  - !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref VpcInternalApiDns ] ]
+                  - !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref VpcPublicDns ] ]
+        - PolicyName: "cloudformation-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "cloudformation:DescribeStacks"
+                Resource: "*"
+        - PolicyName: "ecr-platform-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:BatchGetImage"
+                Resource: "*"
+  SwarmWorkerAutoScalingIamProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties: 
+      Path: "/"
+      Roles:
+        - !Ref SwarmWorkerAutoScalingIamRole
+  SwarmWorkerAutoScalingLaunchConfig:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      AssociatePublicIpAddress: "false"
+      ImageId: !Ref SwarmWorkerImage
+      InstanceMonitoring: true
+      InstanceType: !Ref SwarmWorkerInstanceType
+      IamInstanceProfile: !Ref SwarmWorkerAutoScalingIamProfile
+      KeyName: !Ref StackName
+      SecurityGroups: !Split [",", !Join [",", [ !Ref SwarmWorkerSecurityGroups, !Ref SwarmWorkerSecurityGroup ] ] ]
+      UserData: !Ref SwarmWorkerUserData
+  SwarmWorkerAutoScaling:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AvailabilityZones:
+        - !Ref AvailabilityZone1
+        - !Ref AvailabilityZone2
+      DesiredCapacity: !Ref SwarmWorkerCapacity
+      MaxSize: !Ref SwarmWorkerCapacity
+      MinSize: !Ref SwarmWorkerCapacity
+      LaunchConfigurationName: !Ref SwarmWorkerAutoScalingLaunchConfig
+      VPCZoneIdentifier:
+        - !Ref VpcSwarmWorkerSubnet1
+        - !Ref VpcSwarmWorkerSubnet2
+      Tags:
+        - Key: Name
+          Value: swarm-worker-scaling-group
+          PropagateAtLaunch: true
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+          PropagateAtLaunch: true
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+          PropagateAtLaunch: true
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+          PropagateAtLaunch: true
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-worker"
+          PropagateAtLaunch: true
+        - Key: "bravehub:scaler"
+          Value: "deterministic"
+          PropagateAtLaunch: true
+  SwarmWorkerAutoScalingLaunchConfigSpot:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      AssociatePublicIpAddress: "false"
+      ImageId: !Ref SwarmWorkerImage
+      InstanceMonitoring: true
+      InstanceType: !Ref SwarmWorkerInstanceType
+      IamInstanceProfile: !Ref SwarmWorkerAutoScalingIamProfile
+      KeyName: !Ref StackName
+      SecurityGroups: !Split [",", !Join [",", [ !Ref SwarmWorkerSecurityGroups, !Ref SwarmWorkerSecurityGroup ] ] ]
+      SpotPrice: !Ref SwarmWorkerSpotPrice
+      UserData: !Ref SwarmWorkerUserData
+  SwarmWorkerAutoScalingSpot:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AvailabilityZones:
+        - !Ref AvailabilityZone1
+        - !Ref AvailabilityZone2
+      DesiredCapacity: !Ref SwarmWorkerCapacitySpot
+      MaxSize: !Ref SwarmWorkerCapacitySpot
+      MinSize: !Ref SwarmWorkerCapacitySpot
+      LaunchConfigurationName: !Ref SwarmWorkerAutoScalingLaunchConfigSpot
+      VPCZoneIdentifier:
+        - !Ref VpcSwarmWorkerSubnet1
+        - !Ref VpcSwarmWorkerSubnet2
+      Tags:
+        - Key: Name
+          Value: swarm-worker-scaling-group
+          PropagateAtLaunch: true
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+          PropagateAtLaunch: true
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+          PropagateAtLaunch: true
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+          PropagateAtLaunch: true
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-worker"
+          PropagateAtLaunch: true
+        - Key: "bravehub:scaler"
+          Value: "speculative"
+          PropagateAtLaunch: true
+Outputs:
+  SwarmWorkerSecurityGroup:
+    Value: !GetAtt [ SwarmWorkerSecurityGroup, "GroupId" ]
+  VpcSwarmWorkerTable:
+    Value: !Ref VpcSwarmWorkerTable

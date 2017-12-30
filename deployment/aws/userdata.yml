@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Bravehub userdata generation template.
+Parameters:
+  BastionSecurityGroup:
+    Type: String
+    Description: The bastion security group.
+  BravehubEnv:
+    Type: String
+    Description: The bravehub environment for which we create the storage.
+  DnsSuffix:
+    Type: String
+    Description: The dns suffix assigned for the current deployment.
+  Vpc:
+    Type: String
+    Description: The vpc for which we create the user data components.
+  VpcPublicDns:
+    Type: String
+    Description: The public dns zone available for the platform.
+  VpcInternalApiDns:
+    Type: String
+    Description: The internal dns zone available for the platform.
+  Role:
+    Type: String
+    Description: The bravehub role for which we generate the user data.
+  StackDockerRegistry:
+    Type: String
+    Description: The hostname of the docker registry used by the platform.
+  StackDockerRegistryId:
+    Type: String
+    Description: The unique identifier of the docker registry we want to use for the platform.
+  StackName:
+    Type: String
+    Description: The current stack name for which we create the router.
+Resources:
+  UserDataSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: A pseudo security group which has no external stack dependencies.
+      GroupName: !Join ["", [ !Ref Role, "-userdata-sg" ] ]
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          SourceSecurityGroupId: !Ref BastionSecurityGroup
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          SourceSecurityGroupId: !Ref BastionSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          DestinationSecurityGroupId: !Ref BastionSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          DestinationSecurityGroupId: !Ref BastionSecurityGroup
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          DestinationSecurityGroupId: !Ref BastionSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join ["", [ !Ref Role, "-userdata-sg" ] ]
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+Outputs:
+  SecurityGroup:
+    Value: !GetAtt [ UserDataSecurityGroup, "GroupId" ]
+  UserData:
+    Value:
+      Fn::Base64:
+        Fn::Join:
+          - "\n"
+          - - "#!/bin/sh"
+            - ""
+            - "PATH=$PATH:/usr/bin:/usr/sbin:/usr/local/bin"
+            - "apt-get install -y awscli"
+            - "cd /home/ubuntu"
+            - !Join ["", [ "echo 'export Env=", !Ref BravehubEnv, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+            - !Join ["", [ "echo 'export ROLE=", !Ref Role, "'", " >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+            - !Join ["", [ "echo 'export STACK_NAME=", !Ref StackName, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+            - !Join ["", [ "echo 'export DOCKER_REGISTRY=", !Ref StackDockerRegistry, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+            - !Join ["", [ "echo 'export DOCKER_REGISTRY_ID=", !Ref StackDockerRegistryId, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+            - !Join ["", [ "echo 'export CLUSTER_SUFFIX=", !Ref DnsSuffix, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+            - !Join ["", [ "echo 'export API_ZONE_ID=", !Ref VpcInternalApiDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+            - !Join ["", [ "echo 'export API_ZONE_PUBLIC_ID=", !Ref VpcPublicDns, "' >> ", "/home/ubuntu/instance-descriptor.sh" ] ]
+            - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub-bootstrap.sh ."] ]
+            - !Join ["", [ "aws s3 cp s3://", !Ref StackName, "/provisioning/bravehub.service ."] ]
+            - "chmod u+x bravehub-bootstrap.sh"
+            - "chown -R ubuntu:ubuntu ."
+            - "cp /home/ubuntu/bravehub.service /etc/systemd/user/bravehub.service"
+            - "systemctl enable /etc/systemd/user/bravehub.service"
+            - "systemctl daemon-reload"
+            - "systemctl start bravehub"

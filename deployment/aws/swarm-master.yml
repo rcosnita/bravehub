@@ -1,0 +1,300 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Bravehub swarm master infrastructure template.
+Parameters:
+  AvailabilityZone1:
+    Type: String
+    Description: The first availability zone where the platform is currently deployed.
+  AvailabilityZone2:
+    Type: String
+    Description: The second availability zone where the platform is currently deployed.
+  BravehubEnv:
+    Type: String
+    Description: The bravehub environment for which we create the swarm master.
+  StackCidrPrefix:
+    Type: String
+    Description: The CIDR prefix used for determining the location of the swarm master.
+  StackName:
+    Type: String
+    Description: The current stack name for which we create the swarm master.
+  SwarmMasterCapacity:
+    Type: Number
+    Description: The desired number of masters we want.
+  SwarmMasterImage:
+    Type: String
+    Description: The ami image we want to use for master instances.
+  SwarmMasterInstanceType:
+    Type: String
+    Description: The instance type we want to use for the swarm master.
+  SwarmMasterSecurityGroups:
+    Type: String
+    Description: A list of comma separated security groups we want to apply to the swarm master.
+  SwarmMasterUserData:
+    Type: String
+    Description: The user data used for bootstrapping the swarm masters.
+  SwarmMasterUserDataSecurityGroup:
+    Type: String
+    Description: The swarm master security group created by the user data stack.
+  SwarmWorkerSecurityGroup:
+    Type: String
+    Description: The workers security group we want to grant access.
+  Vpc:
+    Type: String
+    Description: The vpc for which we create the swarm master components.
+  VpcPublicDns:
+    Type: String
+    Description: The public dns zone available for the platform.
+  VpcInternalApiDns:
+    Type: String
+    Description: The internal dns zone available for the platform.
+  VpcNat:
+    Type: String
+    Description: The vpc nat which can be used by swarm masters to access the internet.
+Resources:
+  VpcSwarmMasterTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: swarm-master-routing-table
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-master"
+  VpcSwarmMasterTableInternetAccess:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref VpcSwarmMasterTable
+      NatGatewayId: !Ref VpcNat
+  VpcSwarmMasterSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone1
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".11.0/24" ] ]
+      MapPublicIpOnLaunch: "false"
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: subnet-swarm-master-1
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-master"
+  VpcSwarmMasterSubnet1Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref VpcSwarmMasterTable
+      SubnetId: !Ref VpcSwarmMasterSubnet1
+  VpcSwarmMasterSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone2
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".12.0/24" ] ]
+      MapPublicIpOnLaunch: "false"
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: subnet-swarm-master-2
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-master"
+  VpcSwarmMasterSubnet2Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref VpcSwarmMasterTable
+      SubnetId: !Ref VpcSwarmMasterSubnet2
+  SwarmMasterSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: swarm-master-sg
+      GroupDescription: Security group for controlling inbound / outbound rules for the docker swarm master nodes.
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2375
+          ToPort: 2375
+          SourceSecurityGroupId: !Ref SwarmMasterUserDataSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2377
+          ToPort: 2377
+          SourceSecurityGroupId: !Ref SwarmMasterUserDataSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 7946
+          ToPort: 7946
+          SourceSecurityGroupId: !Ref SwarmMasterUserDataSecurityGroup
+        - IpProtocol: udp
+          FromPort: 7946
+          ToPort: 7946
+          SourceSecurityGroupId: !Ref SwarmMasterUserDataSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2375
+          ToPort: 2375
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2377
+          ToPort: 2377
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 7946
+          ToPort: 7946
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: udp
+          FromPort: 7946
+          ToPort: 7946
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 123
+          ToPort: 123
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 111
+          ToPort: 111
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 7946
+          ToPort: 7946
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: swarm-master-sg
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-master"
+  SwarmMasterAutoScalingIamRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "ec2.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: "ec2-permissions"
+          PolicyDocument:
+            Version : "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "ec2:DescribeInstances"
+                Resource: "*"
+        - PolicyName: "route53-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "route53:GetHostedZone"
+                  - "route53:ChangeResourceRecordSets"
+                Resource:
+                  - !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref VpcInternalApiDns ] ]
+                  - !Join ["", [ "arn:aws:route53:::hostedzone/", !Ref VpcPublicDns ] ]
+        - PolicyName: "cloudformation-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "cloudformation:DescribeStacks"
+                Resource: "*"
+        - PolicyName: "ecr-platform-permissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:BatchGetImage"
+                Resource: "*"
+  SwarmMasterAutoScalingIamProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties: 
+      Path: "/"
+      Roles:
+        - !Ref SwarmMasterAutoScalingIamRole
+  SwarmMasterAutoScalingLaunchConfig:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      AssociatePublicIpAddress: "false"
+      ImageId: !Ref SwarmMasterImage
+      InstanceMonitoring: true
+      InstanceType: !Ref SwarmMasterInstanceType
+      IamInstanceProfile: !Ref SwarmMasterAutoScalingIamProfile
+      KeyName: !Ref StackName
+      SecurityGroups: !Split [",", !Join [",", [ !Ref SwarmMasterSecurityGroups, !Ref SwarmMasterSecurityGroup ] ] ]
+      UserData: !Ref SwarmMasterUserData
+  SwarmMasterAutoScaling:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AvailabilityZones:
+        - !Ref AvailabilityZone1
+        - !Ref AvailabilityZone2
+      DesiredCapacity: !Ref SwarmMasterCapacity
+      MaxSize: !Ref SwarmMasterCapacity
+      MinSize: !Ref SwarmMasterCapacity
+      LaunchConfigurationName: !Ref SwarmMasterAutoScalingLaunchConfig
+      VPCZoneIdentifier:
+        - !Ref VpcSwarmMasterSubnet1
+        - !Ref VpcSwarmMasterSubnet2
+      Tags:
+        - Key: Name
+          Value: swarm-master-scaling-group
+          PropagateAtLaunch: true
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+          PropagateAtLaunch: true
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+          PropagateAtLaunch: true
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+          PropagateAtLaunch: true
+        - Key: "bravehub:layer"
+          Value: "docker-swarm-master"
+          PropagateAtLaunch: true
+        - Key: "bravehub:scaler"
+          Value: "deterministic"
+          PropagateAtLaunch: true
+Outputs:
+  SwarmMasterSecurityGroup:
+    Value: !GetAtt [ SwarmMasterSecurityGroup, "GroupId" ]
+  VpcSwarmMasterTable:
+    Value: !Ref VpcSwarmMasterTable
