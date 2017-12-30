@@ -38,6 +38,17 @@ STACK_DOCKER_REGISTRY=$(jq --raw-output .dockerRegistry ${STACK_CONFIG_FILE})
 STACK_DOCKER_REGISTRY_ARN=$(jq --raw-output .dockerRegistryArn ${STACK_CONFIG_FILE})
 STACK_DOCKER_REGISTRY_ID=$(jq --raw-output .dockerRegistryId ${STACK_CONFIG_FILE})
 
+function upload_stack_file {
+  ROLE=${1}
+  INFRA_ENV_YML=${2}
+  TPL_URL=$(echo ${ROLE} | awk '{print toupper($0)}' | tr '-' '_')_TEMPLATE_URL
+
+  CFN_FILE=s3://${STACK_CFN_S3}/${STACK_ENV}/${ROLE}.yml
+  CFN_TPL_PATH=https://s3-${AWS_DEFAULT_REGION}.amazonaws.com/${STACK_CFN_S3}/${STACK_ENV}/${ROLE}.yml
+  aws s3 cp ${ROLE}.yml ${CFN_FILE}
+  sed -i.bak s@\{\{${TPL_URL}\}\}@${CFN_TPL_PATH}@g ${INFRA_ENV_YML}
+}
+
 function create_stack {
   echo "Stack action: ${STACK_ACTION}"
   echo "Stack name: ${STACK_NAME}"
@@ -67,9 +78,20 @@ function create_stack {
     ParameterKey=StackDockerRegistryId,ParameterValue=${STACK_DOCKER_REGISTRY_ID}
   )
 
-  CFN_FILE=s3://${STACK_CFN_S3}/${STACK_ENV}/infra.yml
-  CFN_TPL_PATH=https://s3-${AWS_DEFAULT_REGION}.amazonaws.com/${STACK_CFN_S3}/${STACK_ENV}/infra.yml
-  aws s3 cp infra.yml ${CFN_FILE}
+  INFRA_ENV_YML=infra.${STACK_ENV}.yml
+  cp infra.yml ${INFRA_ENV_YML}
+
+  upload_stack_file bastion ${INFRA_ENV_YML}
+  upload_stack_file storage ${INFRA_ENV_YML}
+  upload_stack_file router ${INFRA_ENV_YML}
+  upload_stack_file hadoop ${INFRA_ENV_YML}
+  upload_stack_file swarm-master ${INFRA_ENV_YML}
+  upload_stack_file swarm-worker ${INFRA_ENV_YML}
+  upload_stack_file userdata ${INFRA_ENV_YML}
+
+  CFN_FILE=s3://${STACK_CFN_S3}/${STACK_ENV}/${INFRA_ENV_YML}
+  CFN_TPL_PATH=https://s3-${AWS_DEFAULT_REGION}.amazonaws.com/${STACK_CFN_S3}/${STACK_ENV}/${INFRA_ENV_YML}
+  aws s3 cp ${INFRA_ENV_YML} ${CFN_FILE}
 
   aws cloudformation ${STACK_ACTION} \
     --stack-name ${STACK_NAME} \
