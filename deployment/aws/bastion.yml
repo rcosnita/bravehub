@@ -1,0 +1,183 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Bravehub AWS template for creating the bastion layer and its security groups.
+Parameters:
+  AvailabilityZone1:
+    Type: String
+    Description: The first availability zone where the platform is currently deployed.
+  AvailabilityZone2:
+    Type: String
+    Description: The second availability zone where the platform is currently deployed.
+  BastionImage:
+    Type: String
+    Description: The ami image we want to use for bootstrapping the bastion instances.
+  BastionInstanceType:
+    Type: String
+    Description: The instance type we want to use for bastion.
+  BravehubEnv:
+    Type: String
+    Description: The bravehub environment for which we create the bastion.
+  Vpc:
+    Type: String
+    Description: The vpc for which we create the bastion components.
+  VpcIgw:
+    Type: String
+    Description: The vpc internet gateway which can be used by the router.
+  StackCidrPrefix:
+    Type: String
+    Description: The CIDR prefix used for determining the location of the bastion.
+  StackName:
+    Type: String
+    Description: The current stack name for which we create the bastion.
+Resources:
+  BastionTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: bastion-routing-table
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "bastion"
+  BastionTableInternetAccess:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref BastionTable
+      GatewayId: !Ref VpcIgw
+  BastionSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: bastion-sg
+      GroupDescription: Security group for controlling inbound / outbound network rules for the bastion.
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 89.137.28.233/32  # Mountain side - Poiana Tapului
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+  BastionToBastionSecurityGroupSshIngress:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties: 
+      GroupId: !Ref BastionSecurityGroup
+      FromPort: 22
+      ToPort: 22
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref BastionSecurityGroup
+  BastionSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone1
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".250.0/24" ] ]
+      MapPublicIpOnLaunch: "true"
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: subnet-bastion-1
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "bastion"
+  BastionSubnet1Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref BastionTable
+      SubnetId: !Ref BastionSubnet1
+  BastionSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone2
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".251.0/24" ] ]
+      MapPublicIpOnLaunch: "true"
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: subnet-bastion-1
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "bastion"
+  BastionSubnet2Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref BastionTable
+      SubnetId: !Ref BastionSubnet2
+  AvailabilityZone1Bastion:
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      AvailabilityZone: !Ref AvailabilityZone1
+      EbsOptimized: False
+      ImageId: !Ref BastionImage
+      InstanceType: !Ref BastionInstanceType
+      KeyName: !Ref StackName
+      Monitoring: False
+      SecurityGroupIds: 
+        - !Ref BastionSecurityGroup
+      SubnetId: !Ref BastionSubnet1
+      Tags: 
+        - Key: Name
+          Value: bastion-1-az1
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "bastion"
+  AvailabilityZone2Bastion:
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      AvailabilityZone: !Ref AvailabilityZone2
+      EbsOptimized: False
+      ImageId: !Ref BastionImage
+      InstanceType: !Ref BastionInstanceType
+      KeyName: !Ref StackName
+      Monitoring: False
+      SecurityGroupIds: 
+        - !Ref BastionSecurityGroup
+      SubnetId: !Ref BastionSubnet2
+      Tags: 
+        - Key: Name
+          Value: bastion-2-az2
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "bastion"
+Outputs:
+  BastionSecurityGroup:
+    Value: !Ref BastionSecurityGroup
+  BastionSubnet1:
+    Value: !Ref BastionSubnet1
+  Bastion1:
+    Value: !Join ["", [ !Ref AvailabilityZone1, " ----> ", !GetAtt [AvailabilityZone1Bastion, "PublicIp"] ]]
+  BastionSubnet2:
+    Value: !Ref BastionSubnet2
+  Bastion2:
+    Value: !Join ["", [ !Ref AvailabilityZone2, " ----> ", !GetAtt [AvailabilityZone2Bastion, "PublicIp"] ]]

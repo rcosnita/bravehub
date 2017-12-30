@@ -5,6 +5,7 @@ venv
 dist
 node_modules
 *.pyc
+infra.*.yml
 .search-index
 *.tar.gz
 *.bak

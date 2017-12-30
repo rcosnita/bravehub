@@ -1,0 +1,271 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Bravehub infrastructure storage deployment.
+Parameters:
+  AvailabilityZone1:
+    Type: String
+    Description: The first availability zone where the platform is currently deployed.
+  AvailabilityZone2:
+    Type: String
+    Description: The second availability zone where the platform is currently deployed.
+  BravehubEnv:
+    Type: String
+    Description: The bravehub environment for which we create the storage.
+  Vpc:
+    Type: String
+    Description: The vpc for which we create the storage components.
+  VpcNat:
+    Type: String
+    Description: The nat gateway which can be used by the filesystem.
+  VpcRouterTable:
+    Type: String
+    Description: The routing table belonging for the router.
+  VpcSwarmMasterTable:
+    Type: String
+    Description: The routing table belonging for the swarm master.
+  VpcSwarmWorkerTable:
+    Type: String
+    Description: The routing table belonging for the swarm worker.
+  RouterSecurityGroup:
+    Type: String
+    Description: The router security group which is allowed to access the shared filesystem.
+  StackCidrPrefix:
+    Type: String
+    Description: The CIDR prefix used for determining the location of the shared filesystem.
+  StackName:
+    Type: String
+    Description: The current stack name for which we create the storage. It is used to create the S3 bucket.
+  SwarmMasterSecurityGroup:
+    Type: String
+    Description: The swarm master security group which is allowed to access the shared filesystem.
+  SwarmWorkerSecurityGroup:
+    Type: String
+    Description: The swarm worker security group which is allowed to access the shared filesystem.
+Resources:
+  VpcStorage:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Ref StackName
+      Tags:
+        - Key: Name
+          Value: vpc-global-storage
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "vpc-storage"
+  VpcFileSystemStorage:
+    Type: "AWS::EFS::FileSystem"
+    Properties:
+      FileSystemTags:
+        - Key: Name
+          Value: vpc-shared-storage
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "vpc-shared-storage"
+      PerformanceMode: maxIO
+  VpcFileSystemStorageTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: vpc-shared-storage-table
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "vpc-shared-storage"
+  VpcFileSystemStorageTableInternetAccess:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref VpcFileSystemStorageTable
+      NatGatewayId: !Ref VpcNat
+  VpcFileSystemStorageSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone1
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".31.0/24" ] ]
+      MapPublicIpOnLaunch: "false"
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: subnet-vpc-shared-storage-1
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "vpc-shared-storage"
+  VpcFileSystemStorageSubnet1Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref VpcFileSystemStorageTable
+      SubnetId: !Ref VpcFileSystemStorageSubnet1
+  VpcFileSystemStorageSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone2
+      CidrBlock: !Join ["", [ Ref: StackCidrPrefix, ".32.0/24" ] ]
+      MapPublicIpOnLaunch: "false"
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: subnet-vpc-shared-storage-2
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "vpc-shared-storage"
+  VpcFileSystemStorageSubnet2Routing:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref VpcFileSystemStorageTable
+      SubnetId: !Ref VpcFileSystemStorageSubnet2
+  FileSystemStorageSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: shared-storage-sg
+      GroupDescription: Security group for controlling inbound / outbound rules for the shared storage.
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 111
+          ToPort: 111
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 111
+          ToPort: 111
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 111
+          ToPort: 111
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: udp
+          FromPort: 111
+          ToPort: 111
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 111
+          ToPort: 111
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 111
+          ToPort: 111
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: udp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: udp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: shared-storage-sg
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "vpc-shared-storage"
+  FileSystemStorageMountTarget1:
+    Type: "AWS::EFS::MountTarget"
+    Properties:
+      FileSystemId: !Ref VpcFileSystemStorage
+      SecurityGroups:
+        - !Ref FileSystemStorageSecurityGroup
+      SubnetId: !Ref VpcFileSystemStorageSubnet1
+  FileSystemStorageMountTarget2:
+    Type: "AWS::EFS::MountTarget"
+    Properties:
+      FileSystemId: !Ref VpcFileSystemStorage
+      SecurityGroups:
+        - !Ref FileSystemStorageSecurityGroup
+      SubnetId: !Ref VpcFileSystemStorageSubnet2
+  VpcStorageEndpoint:
+    Type: "AWS::EC2::VPCEndpoint"
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action:
+              - "s3:GetObject"
+              - "s3:HeadObject"
+              - "s3:PutObject"
+              - "s3:CreateMultipartUpload"
+              - "s3:ListBucket"
+              - "s3:ListObjects"
+            Resource: "*"
+      RouteTableIds:
+        - !Ref VpcRouterTable
+        - !Ref VpcSwarmMasterTable
+        - !Ref VpcSwarmWorkerTable
+      ServiceName: !Join ["", [ "com.amazonaws.", !Ref "AWS::Region", ".s3" ] ]
+      VpcId: !Ref Vpc
+  VpcStorageInternalAccessPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref VpcStorage
+      PolicyDocument:
+        Statement:
+          -
+            Action: "*"
+            Effect: "Allow"
+            Principal: "*"
+            Resource:
+              - !GetAtt [ VpcStorage, "Arn" ]
+              - !Join ["", [ !GetAtt [ VpcStorage, "Arn" ], "/*" ] ]
+            Condition:
+              StringEquals:
+                aws:sourceVpc:
+                  - !Ref Vpc
+Outputs:
+  SharedStorageDns:
+    Value: !Join ["", [ !Ref VpcFileSystemStorage, ".efs.", !Ref "AWS::Region", ".amazonaws.com" ]]

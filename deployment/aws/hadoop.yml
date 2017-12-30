@@ -1,0 +1,141 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Bravehub hbase infrastructure deployment.
+Parameters:
+  BravehubEnv:
+    Type: String
+    Description: The bravehub environment for which we create the router.
+  RouterSecurityGroup:
+    Type: String
+    Description: The router security group.
+  StackName:
+    Type: String
+    Description: The current stack name for which we create the hadoop stack.
+  SwarmMasterSecurityGroup:
+    Type: String
+    Description: The swarm master security group.
+  SwarmWorkerSecurityGroup:
+    Type: String
+    Description: The swarm worker security group.
+  Vpc:
+    Type: String
+    Description: The vpc for which we create the hadoop components.
+Resources:
+  ZookeeperSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: zookeeper-sg
+      GroupDescription: Security group for controlling inbound / outbound rules for the hadoop zookeeper.
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2181
+          ToPort: 2181
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2181
+          ToPort: 2181
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2181
+          ToPort: 2181
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 2181
+          ToPort: 2181
+          SourceSecurityGroupId: !Ref HbaseSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: zookeeper-sg
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "hadoop-zookeeper"
+  HbaseSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: hbase-sg
+      GroupDescription: Security group for controlling inbound / outbound rules for the hadoop hbase.
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 9090
+          ToPort: 9090
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 9100
+          ToPort: 9100
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 9090
+          ToPort: 9090
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 9100
+          ToPort: 9100
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 9090
+          ToPort: 9090
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 9100
+          ToPort: 9100
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 16000
+          ToPort: 16200
+          SourceSecurityGroupId: !Ref RouterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 16000
+          ToPort: 16200
+          SourceSecurityGroupId: !Ref SwarmMasterSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 16000
+          ToPort: 16200
+          SourceSecurityGroupId: !Ref SwarmWorkerSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: hbase-sg
+        - Key: "bravehub:vpc"
+          Value: !Ref Vpc
+        - Key: "bravehub:stack"
+          Value: !Ref StackName
+        - Key: "bravehub:environment"
+          Value: !Ref BravehubEnv
+        - Key: "bravehub:layer"
+          Value: "hadoop-hbase"
+  HbaseSecurityGroupThriftSelfAccessIngress:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      IpProtocol: tcp
+      FromPort: 9090
+      ToPort: 9090
+      GroupId: !Ref HbaseSecurityGroup
+      SourceSecurityGroupId: !Ref HbaseSecurityGroup
+  HbaseSecurityGroupSelfAccessIngress:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      IpProtocol: tcp
+      FromPort: 16000
+      ToPort: 16200
+      GroupId: !Ref HbaseSecurityGroup
+      SourceSecurityGroupId: !Ref HbaseSecurityGroup
+Outputs:
+  HbaseSecurityGroup:
+    Value: !GetAtt [ HbaseSecurityGroup, "GroupId" ]
+  ZookeeperSecurityGroup:
+    Value: !GetAtt [ ZookeeperSecurityGroup, "GroupId" ]
