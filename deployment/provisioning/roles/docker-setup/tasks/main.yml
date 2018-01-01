@@ -102,6 +102,28 @@
   tags:
     - docker-engine
 
+- name: Upload docker service file.
+  become: yes
+  become_user: root
+  become_method: sudo
+  template:
+    src: etc/systemd/system/multi-user.target.wants/docker.service.j2
+    dest: /etc/systemd/system/multi-user.target.wants/docker.service
+  tags:
+    - docker-engine
+
+- name: Restart docker service.
+  become: yes
+  become_user: root
+  become_method: sudo
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: docker
+    state: restarted
+  tags:
+    - docker-engine
+
 - name: Authenticate to registries.
   include_role:
     name: docker-setup

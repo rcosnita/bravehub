@@ -1,0 +1,21 @@
+---
+- name: Rebalance configuration api service.
+  include_role:
+    name: bravehub-services
+    tasks_from: rebalance-service
+  vars:
+    SERVICE_NAME: configuration-api_configuration-api
+
+- name: Rebalance configuration app service.
+  include_role:
+    name: bravehub-services
+    tasks_from: rebalance-service
+  vars:
+    SERVICE_NAME: configuration-app_configuration-app
+
+- name: Rebalance configuration api service.
+  include_role:
+    name: bravehub-services
+    tasks_from: rebalance-service
+  vars:
+    SERVICE_NAME: provisioning-api_provisioning-api
