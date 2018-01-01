@@ -44,3 +44,10 @@
   vars:
     BALANCED_ROLE: "{{docker.swarm.worker.balanced_name}}"
     SERVER_TAGGED_ROLE: "{{docker.swarm.worker.tagged_role}}"
+
+- name: Rebalance all platform services.
+  include_role:
+    name: bravehub-services
+    tasks_from: rebalance-services
+  vars:
+    SWARM_MASTER: "{{SWARM_FIRST_MASTER}}"

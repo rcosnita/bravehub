@@ -1,0 +1,5 @@
+---
+- name: Rebalance {{SERVICE_NAME}} service.
+  shell: |
+    docker -H tcp://{{SWARM_MASTER}}:2375 service update \
+      --force {{SERVICE_NAME}}
