@@ -4,6 +4,6 @@
     - aws
     - ntp-setup
     - shared-storage-setup
-    - docker-setup
+    - { role: docker-setup, DOCKER_ENABLE_MANAGEMENT: true }
     - swarm-master
     - bravehub-services
