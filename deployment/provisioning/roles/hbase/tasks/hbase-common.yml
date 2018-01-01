@@ -82,7 +82,7 @@
   vars:
     SERVER_HOSTNAME_LOCK_FILE: "{{provisioning_storage}}/hbase-thrift.lock"
     SERVER_HOSTNAME_FILE: "{{hbase_home}}/hbase-thrift-hostname"
-    SERVER_MAX_INSTANCES: "{{hbase_max_thrift}}"
+    SERVER_MAX_INSTANCES: "{{hbase_max_regionservers}}"
     SERVER_INVENTORY_FILE: "{{provisioning_storage}}/hbase-thrift.json"
     SERVER_NAME_PATTERN: "{{hbase_thrift_pattern}}.{{API_ZONE_NAME_STR}}"
   when: HBASE_ROLE == "thrift"
