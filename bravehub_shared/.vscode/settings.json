@@ -1,0 +1,16 @@
+{
+    "python.unitTest.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "test_*.py"
+    ],
+    "python.linting.enabled": true,
+    "python.unitTest.unittestEnabled": true,
+    "python.linting.pylintArgs": [
+        "--rcfile", "${workspaceRoot}/../.pylintrc"        
+    ],
+    "python.venvPath": "${workspaceRoot}/bravehub-shared-env",
+    "python.pythonPath": "${workspaceRoot}/bravehub-shared-env/bin/python3"
+}

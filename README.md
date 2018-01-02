@@ -79,3 +79,7 @@ npm install -d
 sh cicd/generate-api-specs.sh
 open dist/apis
 ```
+
+## Supported IDEs
+
+* [Visual Studio Code](docs/ide/visualstudio-code.md)
