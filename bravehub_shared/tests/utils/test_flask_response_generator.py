@@ -5,7 +5,6 @@ import unittest
 from unittest.mock import Mock
 
 from bravehub_shared.exceptions.bravehub_exceptions import BravehubPlatformException
-from bravehub_shared.utils.dynamic_object import DynamicObject
 from bravehub_shared.utils.flask_response_generator import FlaskResponseGenerator
 
 class MockCustomException(BravehubPlatformException): # pylint: disable=missing-docstring
@@ -21,18 +20,19 @@ class MockCustomException(BravehubPlatformException): # pylint: disable=missing-
       "errorDescription": "Hahahaha"
     }
 
+class MockResponseClass(object): # pylint: disable=too-few-public-methods,missing-docstring
+  def __init__(self, response, status, mimetype, headers=None):
+    self.response = response
+    self.status = status
+    self.mimetype = mimetype
+    self.headers = headers
+
 class FlaskResponseGeneratorTests(unittest.TestCase): # pylint: disable=missing-docstring
   MIMETYPE_JSON = "application/json"
 
   def setUp(self):
     self._flask_app = Mock()
-    self._flask_app.response_class = \
-      lambda response, status, mimetype, headers=None: DynamicObject({
-        "response": response,
-        "status": status,
-        "mimetype": mimetype,
-        "headers": headers
-      })
+    self._flask_app.response_class = MockResponseClass
 
   @property
   def flask_app(self): # pylint: disable=missing-docstring
