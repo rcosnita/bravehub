@@ -19,3 +19,6 @@
 [submodule "configuration-app/third-party/eventemitter3"]
 	path = configuration-app/third-party/eventemitter3
 	url = https://github.com/primus/eventemitter3.git
+[submodule "load-balancer/third-party/nginx"]
+	path = load-balancer/third-party/nginx
+	url = https://github.com/nginx/nginx.git

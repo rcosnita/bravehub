@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": "bravehub_shared"
+		},
+		{
+			"path": "configuration-api"
+		},
+		{
+			"path": "provisioning-api"
+		},
+		{
+			"path": "logging-api"
+		},
+		{
+			"path": "load-balancer"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"ngx_core.h": "c"
+		}
+	}
+}
