@@ -4,8 +4,9 @@ The main entry point for the provisioning api. It bootstraps all routes and rela
 
 import json
 import os
-from flask import Flask
+import ptvsd
 
+from flask import Flask
 from flask import request
 
 app = Flask(__name__)  # pylint: disable=invalid-name
@@ -19,6 +20,9 @@ CORE_APIS_CONFIG = {}
 @app.before_first_request
 def init_app():  # pylint: disable=missing-docstring
   global CORE_APIS_CONFIG  # pylint: disable=global-statement
+
+  if os.environ.get("BRAVEHUB_DEBUG") == "1":
+    ptvsd.enable_attach("my_secret", address=('0.0.0.0', 3020))
 
   with open(os.path.join(CURR_FOLDER, PLATFORM_APIS_FILE)) as core_apis_file:
     CORE_APIS_CONFIG = json.load(core_apis_file)
