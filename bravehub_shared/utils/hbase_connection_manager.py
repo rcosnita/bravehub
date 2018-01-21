@@ -19,8 +19,9 @@ class HbaseConnectionManager(object): # pylint: disable=too-few-public-methods
     def connection(self): # pylint: disable=missing-docstring
       return self._connection
 
-  def __init__(self, conn_pool_property="conn_pool"):
+  def __init__(self, conn_pool_property="conn_pool", raise_error=True):
     self._conn_pool_property = conn_pool_property
+    self._raise_error = raise_error
     self._hbase_connection_arg = "hbase_manager"
     self._healthcheck_table = "healthchecks"
     self._rowid = b"1"
@@ -64,7 +65,11 @@ class HbaseConnectionManager(object): # pylint: disable=too-few-public-methods
           kwargs[self._hbase_connection_arg] = HbaseConnectionManager.HbaseConnection(conn)
           return method(*args, **kwargs)
 
-      raise ValueError("No more hbase connections: %s attempts." % num_retries)
+      if self._raise_error:
+        raise ValueError("No more hbase connections: %s attempts." % num_retries)
+
+      kwargs[self._hbase_connection_arg] = None
+      return method(*args, **kwargs)
 
     handle_method.__doc__ = method.__doc__
 

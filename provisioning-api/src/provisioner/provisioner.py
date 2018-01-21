@@ -17,6 +17,9 @@ import uuid
 
 from urllib.error import HTTPError
 
+import ptvsd
+
+
 from bravehub_shared.utils.dynamic_object import DynamicObject
 from bravehub_shared.utils.hbase_connection_manager import HbaseConnectionManager
 from bravehub_shared.utils.row_locker import OptimisticLocker
@@ -49,8 +52,11 @@ class Provisioner(object):  # pylint: disable=too-many-instance-attributes
       self._run_next_task()
       time.sleep(self._sleeping_period)
 
-  @HbaseConnectionManager()
+  @HbaseConnectionManager(raise_error=False)
   def _run_next_task(self, hbase_manager=None):
+    if not hbase_manager:
+      return
+
     project = None
     project_id = None
     project_data = None
@@ -148,6 +154,10 @@ class Provisioner(object):  # pylint: disable=too-many-instance-attributes
 
 if __name__ == "__main__":
   from src.ioc import CoreContainer, ProvisionerContainer
+
+  if os.environ.get("BRAVEHUB_DEBUG") == "1":
+    ptvsd.enable_attach("my_secret", address=('0.0.0.0', 3020))
+
   CoreContainer.config.update({
     "cluster_suffix": os.environ["BRAVEHUB_SUFFIX"]
   })
