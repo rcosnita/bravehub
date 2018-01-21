@@ -7,7 +7,7 @@ import happybase
 from dependency_injector.containers import DeclarativeContainer
 from dependency_injector.providers import Configuration, Object, Singleton
 
-from bravehub_shared.ioc import CoreContainer
+from bravehub_shared.ioc import CoreContainer, ApiClientsContainer
 from bravehub_shared.utils.dynamic_object import DynamicObject
 
 from src.services.apis import ProjectApiService
@@ -45,7 +45,9 @@ class ConfigurationApiContainer(DeclarativeContainer): # pylint: disable=too-few
                           conn_pool=hbase_conn_pool,
                           charset=CoreContainer.DEFAULT_CHARSET,
                           project_service=project_service,
-                          id_service=CoreContainer.id_service)
+                          id_service=CoreContainer.id_service,
+                          provisioning_api = ApiClientsContainer.provisioning_api,
+                          provisioning_api_version = "v0.1")
 
   config_binaries_service = Singleton(ConfigBinariesService,
                                       flask_app=CoreContainer.config.flask_app,

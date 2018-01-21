@@ -1,7 +1,6 @@
 """Provides the class for running a specific image on the current infrastructure."""
 
 from abc import ABC, abstractmethod
-import json
 
 from bravehub_shared.utils.hbase_connection_manager import HbaseConnectionManager
 from bravehub_shared.utils.row_locker import OptimisticLocker
@@ -25,9 +24,10 @@ class ImageRunner(ABC):
   """Provides the contract which must be implemented by each image runner. Depending on the
   orchestrator we want to use we are going to use a specific runner."""
 
-  def __init__(self, hbase_conn_pool, default_charset):
+  def __init__(self, hbase_conn_pool, default_charset, metaports_mapping_service):
     self._hbase_conn_pool = hbase_conn_pool
     self._default_charset = default_charset
+    self._metaports_mapping_service = metaports_mapping_service
 
   @property
   def conn_pool(self):  # pylint: disable=missing-docstring
@@ -100,24 +100,19 @@ class ImageRunner(ABC):
 
       return int(port)
 
-  @HbaseConnectionManager()
-  def _save_port_mappings(self, image_ctx, port_mappings, hbase_manager=None):
+  def _save_port_mappings(self, image_ctx, port_mappings):
     """Stores the association between apis and reserved ports. This actually accelerates
     the provisioning api responsible for retrieving the location of a specific domain and path."""
 
-    conn = hbase_manager.connection
-    mapping_tbl = conn.table("provisioningmetaportsmapping")
-    mapping_tbl.put(bytes(image_ctx.api_id, self._default_charset),
-                    {
-                      b"api:ports": bytes(json.dumps(port_mappings), self._default_charset)
-                    })
+    self._metaports_mapping_service.save_port_mappings(image_ctx.api_id, port_mappings)
 
 class DockerEngineImageRunner(ImageRunner):
   """Provides an implementation for the docker engine. This is designed to work on development
   environments."""
 
-  def __init__(self, hbase_conn_pool, default_charset, docker_client):
-    super(DockerEngineImageRunner, self).__init__(hbase_conn_pool, default_charset)
+  def __init__(self, hbase_conn_pool, default_charset, metaports_mapping_service, docker_client):
+    super(DockerEngineImageRunner, self).__init__(hbase_conn_pool, default_charset,
+                                                  metaports_mapping_service)
     self._docker_client = docker_client
 
   def _create_network(self, image_ctx, runner_ctx, port_mappings):

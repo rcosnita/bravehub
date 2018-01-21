@@ -10,6 +10,16 @@
           "port": 3020,
           "secret": "my_secret",
           "host":"localhost"
-      }
+      },
+      {
+        "name": "provisioner docker debug",
+        "type": "python",
+        "request": "attach",
+        "localRoot": "${workspaceRoot}/src",
+        "remoteRoot": "/root/provisioning-api/src",
+        "port": 3040,
+        "secret": "my_secret",
+        "host":"127.0.0.1"
+    }
     ]
   }

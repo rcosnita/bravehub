@@ -17,9 +17,11 @@ class ImageBuilderContext(object):
     self._api_id = api_id
     self._build_num = build_num
     self._config_data = config_data
-    self._build_data = [DynamicObject(build)
-                        for build in config_data.builds
-                        if build["build"] == build_num][0]
+
+    build_data = [DynamicObject(build)
+                  for build in config_data.builds
+                  if str(build["build"]) == str(build_num)]
+    self._build_data = build_data[0]
 
   @property
   def project_id(self):  # pylint: disable=missing-docstring

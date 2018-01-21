@@ -14,10 +14,12 @@ class ProjectApiService(BravehubService):
   PROJECTS_TABLE = "projects"
   APIS_TABLE = "apis"
 
-  def __init__(self, flask_app, conn_pool, charset, project_service, id_service): # pylint: disable=too-many-arguments
+  def __init__(self, flask_app, conn_pool, charset, project_service, id_service, provisioning_api, provisioning_api_version): # pylint: disable=too-many-arguments
     super(ProjectApiService, self).__init__(flask_app, conn_pool, charset)
     self._project_service = project_service
     self._id_service = id_service
+    self._provisioning_api = provisioning_api
+    self._provisioning_api_version = provisioning_api_version
 
   @FlaskResponseGenerator()
   def list_apis(self, project_id):
@@ -85,6 +87,20 @@ class ProjectApiService(BravehubService):
         "path": api_data.path
       }), self._charset)
     })
+
+    push_state_path = "/{0}/projects/{1}/apis/{2}/builds/{3}/states".format(
+      self._provisioning_api_version,
+      project_id,
+      api_id.decode(self._charset),
+      "1"
+    )
+
+    push_state_data = {
+      "domain": project[b"attrs:domain"].decode(self._charset),
+      "path": api_path
+    }
+
+    self._provisioning_api.post_json(push_state_path, data=push_state_data)
 
     return None, 201, {"Location": self._get_api_location(project_id, api_id.decode(self._charset))}
 
