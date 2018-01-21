@@ -54,7 +54,8 @@ class ApiClient(object):
     """Allows end users to invoke a HTTP post operation using the current api client."""
 
     data = json.dumps(data or {})
-    req = self._build_request(api_path, params, headers, method="POST", data=data)
+    req = self._build_request(api_path, params, headers, method="POST",
+                              data=data.encode(self.DEFAULT_CHARSET))
 
     with self._http_client.urlopen(req) as resp:
       return self._build_response(resp)
@@ -63,7 +64,8 @@ class ApiClient(object):
     """Allows end users to invoke a HTTP post operation using the current api client."""
 
     data = json.dumps(data or {})
-    req = self._build_request(api_path, params, headers, method="PUT", data=data)
+    req = self._build_request(api_path, params, headers, method="PUT",
+                              data=data.encode(self.DEFAULT_CHARSET))
 
     with self._http_client.urlopen(req) as resp:
       return self._build_response(resp)

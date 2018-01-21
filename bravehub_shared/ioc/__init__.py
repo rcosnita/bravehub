@@ -31,8 +31,8 @@ class ApiClientsContainer(DeclarativeContainer): # pylint: disable=too-few-publi
 
   logging_api = Singleton(ApiClient, api_name="logging-api",
                           cluster_suffix=CoreContainer.config.cluster_suffix,
-                          http_client=request, api_port=5000)
+                          http_client=request, api_port=5010)
 
   provisioning_api = Singleton(ApiClient, api_name="provisioning-api",
                                cluster_suffix=CoreContainer.config.cluster_suffix,
-                               http_client=request, api_port=5000)
+                               http_client=request, api_port=5020)
