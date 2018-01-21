@@ -82,6 +82,7 @@ services:
       FLASK_APP: src/app.py
       PYTHONPATH: .:src
       HBASE_THRIFT_API: hbase-thrift.api.internal.bravehub-dev.com
+      WORKER_DOMAIN: 172.18.0.1
     ports:
       - "127.0.0.1:5020:5020"
       - "127.0.0.1:3020:3020"
@@ -99,13 +100,16 @@ services:
     entrypoint:
       - sh
       - "-c"
-      - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 0.1; done && python3 src/provisioner/provisioner.py"
+      - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 5; done && sleep 30 && python3 src/provisioner/provisioner.py"
     environment:
+      BRAVEHUB_DEBUG: 1
       BRAVEHUB_SUFFIX: "bravehub-dev.com"
       HBASE_THRIFT_API: hbase-thrift.api.internal.bravehub-dev.com
       PYTHONPATH: .:src
       ORCHESTRATOR_PROVIDER: src.provisioner.provider.DockerStandAlone
       NAS_MOUNT: /root/nas
+    ports:
+      - "127.0.0.1:3040:3020"
     volumes:
       - ./provisioning-api:/root/provisioning-api:consistent
       - ./bravehub_shared:/root/provisioning-api/src/bravehub_shared:consistent
