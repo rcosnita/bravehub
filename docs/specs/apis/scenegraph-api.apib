@@ -1,0 +1,139 @@
+FORMAT: 1a
+HOST: http://scenegraph-api.api.internal.bravehub.com
+
+# Scenegraph
+
+The scenegraph API is responsible for managing all UI elements used to describe a project from the Bravehub platform.
+
+Every project has a scenegraph associated with it. We can store all complex nodes in the scenegraph and every platform can decide how to render them as well as the width and height of every node. Based on the density configuration we can easily convert the distance coordinate into DIP (device independent pixel).
+
+Even though we can store attributes of each scene node directly in the scenegraph storage we strongly recommend not doing this. We prefer to introduce a small penalty while rendering a scenegraph initially rather than having to keep scenegraph and external storages in sync (e.g scenegraph with projects storage).
+
+![Scenegraph polar system](../../docs/images/editor/scenegraph-polar-representation.png)
+
+![Scenegraph cartesian to polar calculus](../../docs/images/editor/scenegraph-cartesian-polar-calculus.png)
+
+![Scenegraph device independent pixels](../../docs/images/editor/scenegraph-dips.png)
+
+# Group Scenes
+
+Provides the resources for managing the scenes from the platform.
+
+## Scenes collection [/scenes/{sceneId}]
+
+### Get an existing scene [GET]
+
++ Parameters
+    + sceneId (UUID) - The unique identifier of the scenegraph (can be the projectId for simplicity).
+
++ Request Get scene (application/json)
+
++ Response 200 (application/json)
+
+        {
+                "id": "5cf47fb5-ab1e-485b-9934-3e8cd062487e",
+                "shapes": [
+                    {
+                        "type": "project",
+                        "coordinates": {
+                            "D": 424.265,
+                            "cost": 0.70710,
+                            "sint": 0.50021
+                        },
+                        "model": {
+                            "id": "5cf47fb5-ab1e-485b-9934-3e8cd062487e"
+                        },
+                        "screen": {
+                            "density": 2.0
+                        }
+                    },
+                    {
+                        "type": "api",
+                        "coordinates": {
+                            "D": 300.265,
+                            "cost": 0.50710,
+                            "sint": 0.80021
+                        },
+                        "model": {
+                            "id": "4a674c39-f239-4717-a97e-983a201ece7d"
+                        },
+                        "screen": {
+                            "density": 2.0
+                        }
+                    },
+                    {
+                        "type": "api",
+                        "coordinates": {
+                            "D": 800.265,
+                            "cost": 0,
+                            "sint": 1
+                        },
+                        "model": {
+                            "id": "2a499c39-f239-4717-a97e-983a201ece7d"
+                        },
+                        "screen": {
+                            "density": 1.0
+                        }
+                    }
+                }]
+        }
+
+### Update an existing scene [PUT]
+
+This operation creates a new scenegraph if it doesn't exist or alter an existing one if it does.
+
++ Parameters
+    + sceneId (UUID) - The unique identifier of the scenegraph (can be the projectId for simplicity).
+
++ Request Update a scene (application/json)
+
+    + Body
+
+            {
+                "shapes": [
+                    {
+                        "type": "project",
+                        "coordinates": {
+                            "D": 424.265,
+                            "cost": 0.70710,
+                            "sint": 0.50021
+                        },
+                        "model": {
+                            "id": "5cf47fb5-ab1e-485b-9934-3e8cd062487e"
+                        },
+                        "screen": {
+                            "density": 2.0
+                        }
+                    },
+                    {
+                        "type": "api",
+                        "coordinates": {
+                            "D": 300.265,
+                            "cost": 0.50710,
+                            "sint": 0.80021
+                        },
+                        "model": {
+                            "id": "4a674c39-f239-4717-a97e-983a201ece7d"
+                        },
+                        "screen": {
+                            "density": 2.0
+                        }
+                    },
+                    {
+                        "type": "api",
+                        "coordinates": {
+                            "D": 800.265,
+                            "cost": 0,
+                            "sint": 1
+                        },
+                        "model": {
+                            "id": "2a499c39-f239-4717-a97e-983a201ece7d"
+                        },
+                        "screen": {
+                            "density": 1.0
+                        }
+                    }
+                }]
+            }
+
++ Response 204

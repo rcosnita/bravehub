@@ -28,6 +28,7 @@ In order to start the platform follow the steps below:
     ```
     127.0.0.1       configuration-api.api.bravehub-dev.com
     127.0.0.1       configuration-app.api.bravehub-dev.com
+    127.0.0.1       scenegraph-api.api.bravehub-dev.com
     ```
 
 1. Start platform.
