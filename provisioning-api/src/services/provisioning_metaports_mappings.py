@@ -2,7 +2,6 @@
 
 import json
 from bravehub_shared.services.base_service import BravehubService
-from bravehub_shared.exceptions.bravehub_exceptions import BravehubNotFoundException
 from bravehub_shared.utils.hbase_connection_manager import HbaseConnectionManager
 
 class ProvisioningMetaportsMappingService(BravehubService):
@@ -37,4 +36,4 @@ class ProvisioningMetaportsMappingService(BravehubService):
       # https://stackoverflow.com/questions/17431638/get-typeerror-dict-values-object-does-not-support-indexing-when-using-python
       return list(result.values())[0]
 
-    raise BravehubNotFoundException()
+    return None
