@@ -2,9 +2,6 @@
 
 from abc import ABC, abstractmethod
 
-from bravehub_shared.utils.hbase_connection_manager import HbaseConnectionManager
-from bravehub_shared.utils.row_locker import OptimisticLocker
-
 class ImageRunnerContext(object):
   """Provides a model for passing all required attributes for running a service."""
 
@@ -24,10 +21,10 @@ class ImageRunner(ABC):
   """Provides the contract which must be implemented by each image runner. Depending on the
   orchestrator we want to use we are going to use a specific runner."""
 
-  def __init__(self, hbase_conn_pool, default_charset, metaports_mapping_service):
+  def __init__(self, hbase_conn_pool, default_charset, metaports_service):
     self._hbase_conn_pool = hbase_conn_pool
     self._default_charset = default_charset
-    self._metaports_mapping_service = metaports_mapping_service
+    self._metaports_service = metaports_service
 
   @property
   def conn_pool(self):  # pylint: disable=missing-docstring
@@ -44,8 +41,11 @@ class ImageRunner(ABC):
     self._deploy_image(image_ctx, runner_ctx, port_mappings, network_name)
 
   def _choose_ports(self, image_ctx, runner_ctx, port_mappings):  # pylint: disable=unused-argument
+    api_id = image_ctx.api_id
     for port in port_mappings.keys():
-      public_port = self._reserve_next_free_port(image_ctx)
+      public_port = self._metaports_service.get_port_mappings(api_id)
+      if not public_port:
+        public_port = self._metaports_service.reserve_next_free_port(api_id)
 
       if not public_port:
         # TODO(cosnita) add proper recovery mechanism.
@@ -53,7 +53,7 @@ class ImageRunner(ABC):
 
       port_mappings[port] = public_port
 
-    self._save_port_mappings(image_ctx, port_mappings)
+    self._metaports_service.save_port_mappings(api_id, port_mappings)
 
   @abstractmethod
   def _create_network(self, image_ctx, runner_ctx, port_mappings):
@@ -66,53 +66,12 @@ class ImageRunner(ABC):
     """Provides the logic for deploying the image on the underlining infrastructure."""
     pass
 
-  @HbaseConnectionManager()
-  def _reserve_next_free_port(self, image_ctx, hbase_manager=None):
-    """It relies on the hbase provisioningmetaports table in order to obtain an available port. It
-    uses an optimistic locking strategy in order to solve the potential concurrency issues."""
-
-    conn = hbase_manager.connection
-    ports_tbl = conn.table("provisioningmetaports")
-
-    port_record = ports_tbl.scan(filter="SingleColumnValueFilter('attrs','status',=,'binary:free')",
-                                 limit=1)
-
-    try:
-      port_record = next(port_record)
-    except StopIteration:
-      # TODO(cosnita) implement proper signaling for missing ports
-      raise ValueError("No free ports ... Go away ...")
-
-    port_id = port_record[0]
-    port_id_str = port_id.decode(self._default_charset)
-
-    # We know that the format is guid-port -> used for making sure we don't end up with a hot
-    # region.
-    port = port_id_str[port_id_str.rfind("-") + 1:]
-    expected_status = bytes(image_ctx.api_id, self._default_charset)
-
-    with OptimisticLocker(self._hbase_conn_pool, self._default_charset, "provisioningmetaports",
-                          port_id,
-                          when_acquired=lambda conn, tbl: \
-                            tbl.put(port_id, {b"attrs:status": expected_status})) as lock:
-      if not lock.locked:
-        return
-
-      return int(port)
-
-  def _save_port_mappings(self, image_ctx, port_mappings):
-    """Stores the association between apis and reserved ports. This actually accelerates
-    the provisioning api responsible for retrieving the location of a specific domain and path."""
-
-    self._metaports_mapping_service.save_port_mappings(image_ctx.api_id, port_mappings)
-
 class DockerEngineImageRunner(ImageRunner):
   """Provides an implementation for the docker engine. This is designed to work on development
   environments."""
 
-  def __init__(self, hbase_conn_pool, default_charset, metaports_mapping_service, docker_client):
-    super(DockerEngineImageRunner, self).__init__(hbase_conn_pool, default_charset,
-                                                  metaports_mapping_service)
+  def __init__(self, hbase_conn_pool, default_charset, metaports_service, docker_client): # pylint: disable=line-too-long
+    super(DockerEngineImageRunner, self).__init__(hbase_conn_pool, default_charset, metaports_service) # pylint: disable=line-too-long
     self._docker_client = docker_client
 
   def _create_network(self, image_ctx, runner_ctx, port_mappings):
@@ -127,5 +86,11 @@ class DockerEngineImageRunner(ImageRunner):
 
   def _deploy_image(self, image_ctx, runner_ctx, port_mappings, network_name):
     image_tag = runner_ctx.image_tag
+
+    #check if this is an existing API and stop the current container if it's going
+    running_container = [c for c in self._docker_client.containers.list()
+                         if c.attrs['Config']['Image'] == image_tag]
+    if running_container:
+      running_container[0].remove(v=True, force=True) # also remove volume.
     self._docker_client.containers.run(image_tag, auto_remove=True, network=network_name,
                                        detach=True, ports=port_mappings)

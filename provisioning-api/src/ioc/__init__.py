@@ -16,7 +16,7 @@ from src.provisioner.image_runner import DockerEngineImageRunner
 from src.provisioner.provisioner import Provisioner
 from src.services.provisioning_tasks import ProvisioningTaskService
 from src.services.domains import DomainService
-from src.services.provisioning_metaports_mappings import ProvisioningMetaportsMappingService
+from src.services.metaports import MetaportsService
 
 class ProvisionerContainer(DeclarativeContainer):  # pylint: disable=too-few-public-methods
   """Provides all the bindings required by the provisioner service."""
@@ -47,10 +47,11 @@ class ProvisionerContainer(DeclarativeContainer):  # pylint: disable=too-few-pub
                              conn_pool=hbase_conn_pool,
                              charset=CoreContainer.DEFAULT_CHARSET)
 
-  metaports_mapping_service = Singleton(ProvisioningMetaportsMappingService,
-                                        flask_app=CoreContainer.config.flask_app,
-                                        conn_pool=hbase_conn_pool,
-                                        charset=CoreContainer.DEFAULT_CHARSET)
+
+  metaports_service = Singleton(MetaportsService,
+                                flask_app=CoreContainer.config.flask_app,
+                                conn_pool=hbase_conn_pool,
+                                charset=CoreContainer.DEFAULT_CHARSET)
 
   docker_image_builder = Singleton(DockerImageBuilder, file_system=CoreContainer.file_system,
                                    docker_client=docker_client,
@@ -59,7 +60,7 @@ class ProvisionerContainer(DeclarativeContainer):  # pylint: disable=too-few-pub
   docker_image_runner = Singleton(DockerEngineImageRunner, hbase_conn_pool=hbase_conn_pool,
                                   default_charset=CoreContainer.DEFAULT_CHARSET,
                                   docker_client=docker_client,
-                                  metaports_mapping_service=metaports_mapping_service)
+                                  metaports_service=metaports_service)
 
   provisioner = Singleton(Provisioner,
                           sleeping_period=10, hbase_conn_pool=hbase_conn_pool,

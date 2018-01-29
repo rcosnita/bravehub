@@ -50,8 +50,8 @@ def _get_provisioning_tasks_service():
 def _get_domains_service():
   return ProvisionerContainer.domain_service()
 
-def _get_metaports_mapping_service():
-  return ProvisionerContainer.metaports_mapping_service()
+def _get_metaports_service():
+  return ProvisionerContainer.metaports_service()
 
 def _serve_platform_api(domain):
   """In case the given domain is a platform service domain, route the request to the platform
@@ -107,7 +107,7 @@ def resolve_domains():
 
   api_id = _get_domains_service().get_api_id_for_domain_and_path(domain, path)
   if api_id:
-    worker_port = _get_metaports_mapping_service().get_port_mappings(api_id)
+    worker_port = _get_metaports_service().get_port_mappings(api_id)
     if worker_port:
       response = {
         "workerDomain": WORKER_DOMAIN,

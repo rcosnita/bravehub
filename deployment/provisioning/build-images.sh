@@ -61,36 +61,40 @@ if [[ ! -z "${BRAVEHUB_CLOUD_ENV}" ]]; then
 fi
 
 ZOOKEEPER_IMAGE_NAME="bravehub/zookeeper:${ZOOKEEPER_VERSION}"
-cd deployment/hadoop/zookeeper && docker build -t ${ZOOKEEPER_IMAGE_NAME} -f Dockerfile .
+pushd deployment/hadoop/zookeeper
+docker build -t ${ZOOKEEPER_IMAGE_NAME} -f Dockerfile .
 upload_image ${ZOOKEEPER_IMAGE_NAME} zookeeper ${ZOOKEEPER_VERSION}
+popd
 
-cd ${WORKDIR}
 HBASE_IMAGE_NAME="bravehub/hbase:${HBASE_VERSION}"
-cd deployment/hadoop/hbase && docker build -t ${HBASE_IMAGE_NAME} -f Dockerfile .
+pushd deployment/hadoop/hbase
+docker build -t ${HBASE_IMAGE_NAME} -f Dockerfile .
 upload_image ${HBASE_IMAGE_NAME} hbase ${HBASE_VERSION}
+popd
 
-cd ${WORKDIR}
 SETUP_DATABASE_IMAGE_NAME="bravehub/setup-database:${BRAVEHUB_VERSION}"
-cd deployment/bravehub && docker build -t ${SETUP_DATABASE_IMAGE_NAME} -f Dockerfile .
+pushd deployment/bravehub
+docker build -t ${SETUP_DATABASE_IMAGE_NAME} -f Dockerfile .
 upload_image ${SETUP_DATABASE_IMAGE_NAME} setup-database ${BRAVEHUB_VERSION}
+popd
 
-cd ${WORKDIR}
 CONFIGURATION_API_IMAGE_NAME="bravehub/configuration-api:${BRAVEHUB_VERSION}"
 docker build -t ${CONFIGURATION_API_IMAGE_NAME} -f configuration-api/Dockerfile .
 upload_image ${CONFIGURATION_API_IMAGE_NAME} configuration-api ${BRAVEHUB_VERSION}
 
-cd ${WORKDIR}
 CONFIGURATION_APP_IMAGE_NAME="bravehub/configuration-app:${BRAVEHUB_VERSION}"
-docker-compose build configuration-app.api.internal.bravehub-dev.com && cd deploymentWORKDIR}
-cd deployment/../configuration-app && docker build -t ${CONFIGURATION_APP_IMAGE_NAME} -f Dockerfile-prod .
+docker-compose build configuration-app.api.internal.bravehub-dev.com && cd ${WORKDIR}
+pushd configuration-app
+docker build -t ${CONFIGURATION_APP_IMAGE_NAME} -f Dockerfile-prod .
 upload_image ${CONFIGURATION_APP_IMAGE_NAME} configuration-app ${BRAVEHUB_VERSION}
+popd
 
-cd ${WORKDIR}
 PROVISIONING_API_IMAGE_NAME="bravehub/provisioning-api:${BRAVEHUB_VERSION}"
 docker build -t ${PROVISIONING_API_IMAGE_NAME} -f provisioning-api/Dockerfile .
 upload_image ${PROVISIONING_API_IMAGE_NAME} provisioning-api ${BRAVEHUB_VERSION}
 
-cd ${WORKDIR}
 ROUTER_IMAGE_NAME="bravehub/router:${BRAVEHUB_VERSION}"
-cd deployment/../load-balancer && docker build -t ${ROUTER_IMAGE_NAME} -f Dockerfile .
+pushd load-balancer
+docker build -t ${ROUTER_IMAGE_NAME} -f Dockerfile .
 upload_image ${ROUTER_IMAGE_NAME} router ${BRAVEHUB_VERSION}
+popd
