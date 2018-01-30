@@ -42,10 +42,11 @@ class ImageRunner(ABC):
     self._deploy_image(image_ctx, runner_ctx, port_mappings, network_name)
 
   def _choose_ports(self, image_ctx, runner_ctx, port_mappings):  # pylint: disable=unused-argument
+    api_id = image_ctx.api_id
     for port in port_mappings.keys():
-      public_port = self._metaports_mapping_service.get_port_mappings(image_ctx.api_id)
+      public_port = self._metaports_mapping_service.get_port_mappings(api_id)
       if not public_port:
-        public_port = self._metaports_service.reserve_next_free_port(image_ctx.api_id)
+        public_port = self._metaports_service.reserve_next_free_port(api_id)
 
       if not public_port:
         # TODO(cosnita) add proper recovery mechanism.
@@ -53,7 +54,7 @@ class ImageRunner(ABC):
 
       port_mappings[port] = public_port
 
-    self._save_port_mappings(image_ctx, port_mappings)
+    self._metaports_mapping_service.save_port_mappings(api_id, port_mappings)
 
   @abstractmethod
   def _create_network(self, image_ctx, runner_ctx, port_mappings):
@@ -65,12 +66,6 @@ class ImageRunner(ABC):
   def _deploy_image(self, image_ctx, runner_ctx, port_mappings, network_name):
     """Provides the logic for deploying the image on the underlining infrastructure."""
     pass
-
-  def _save_port_mappings(self, image_ctx, port_mappings):
-    """Stores the association between apis and reserved ports. This actually accelerates
-    the provisioning api responsible for retrieving the location of a specific domain and path."""
-
-    self._metaports_mapping_service.save_port_mappings(image_ctx.api_id, port_mappings)
 
 class DockerEngineImageRunner(ImageRunner):
   """Provides an implementation for the docker engine. This is designed to work on development
