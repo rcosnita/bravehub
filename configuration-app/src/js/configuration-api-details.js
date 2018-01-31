@@ -49,7 +49,12 @@ class ConfigurationApiDetails extends Polymer.Element {
 
   static get is() { return "configuration-api-details"; }
 
+  _isModelNew() {
+    return this.apiModel && !this.apiModel.id;
+  }
+
   createApi() {
+    // TODO (rcosnita) add support for update operations.
     const projectLocation = this.projectModel.__meta__.location;
 
     const action = Rx.DOM.ajax({  // eslint-disable-line no-undef
@@ -80,29 +85,23 @@ class ConfigurationApiDetails extends Polymer.Element {
       responseType: "json",
     }).subscribe(
       (data) => {
-        this.apiModel = data.response;
-        this.ports = this.apiModel.exposedPorts.join(",");
-
-        let buildsData = JSON.parse(JSON.stringify(this.apiModel.builds));
-        buildsData.forEach((item) => {
-          delete item.id;
-          delete item.configuration.assets;
-          delete item.configuration.droplet;
-        });
-
-        this.buildsData = JSON.stringify(buildsData, null, 4);
+        Object.assign(this.apiModel, data.response);
+        this._restoreModel(this.apiModel);
       },
       (err) => console.log(err)  // eslint-disable-line no-console
     );
   }
 
   _restoreModel(apiModel) {
-    if (!apiModel) {
+    this.apiModel = apiModel;
+    this.isNew = this._isModelNew();
+
+    if (!apiModel || JSON.stringify(apiModel) === "{}") {
       return;
     }
 
     const exposedPorts = (apiModel.exposedPorts || [80]).join(",");
-    const buildsData = this.isNew ? apiModel.build : apiModel.builds;
+    const buildsData = this._isModelNew() ? apiModel.build : apiModel.builds;
     this.buildsData = JSON.stringify(buildsData || {});
     this._storeBuildsData(this.buildsData);
 
@@ -119,7 +118,7 @@ class ConfigurationApiDetails extends Polymer.Element {
       // suppress invalid json error in here. The user might be typing builds data.
     }
 
-    if (this.isNew) {
+    if (this._isModelNew()) {
       this.apiModel.build = buildsData;
     } else {
       this.apiModel.builds = buildsData;
@@ -132,6 +131,15 @@ class ConfigurationApiDetails extends Polymer.Element {
 
   _whenApiCreated(resp) {
     const apiLocation = resp.xhr.getResponseHeader("Location");
+    const tmp = apiLocation.split("/");
+    const apiId = tmp[tmp.length - 1];
+
+    this.apiModel.id = apiId;
+
+    const invalidateEvtName = Events.sceneGraph.INVALIDATE_SCENE;
+    this.messageBus.emit(invalidateEvtName, new UiEvent(invalidateEvtName, {
+      "node": this,
+    }));
 
     this._configUploaded = false;
     this._dropletUploaded = false;
@@ -190,6 +198,11 @@ class ConfigurationApiDetails extends Polymer.Element {
 
     this._configUploaded = false;
     this._dropletUploaded = false;
+
+    this._loadDetails({
+      id: this.apiModel.id,
+      project: this.projectModel,
+    });
 
     alert("API created successfully ...");
 

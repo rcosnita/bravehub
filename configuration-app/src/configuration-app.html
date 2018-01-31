@@ -73,7 +73,8 @@
       <app-drawer id="drawer" slot="drawer" swipe-open="[[narrow]]">
         <app-toolbar>Hubber Radu</app-toolbar>
         <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
-          <a name="configuration-projects-webgl" href="[[rootPath]]configuration-projects-webgl">Create Projects WebGL</a>
+          <a name="configuration-projects-webgl" href="[[rootPath]]configuration-projects-webgl">Create Projects</a>
+          <a name="configuration-projects-edit-webgl" href="[[rootPath]]configuration-projects-edit-webgl">Edit Projects</a>
         </iron-selector>
       </app-drawer>
 
@@ -91,6 +92,8 @@
             fallback-selection="configuration-view404"
             role="main">
           <configuration-projects-webgl name="configuration-projects-webgl"></configuration-projects-webgl>
+
+          <configuration-projects-edit-webgl name="configuration-projects-edit-webgl"></configuration-projects-edit-webgl>
 
           <configuration-view404 name="configuration-view404"></my-view404>
         </iron-pages>

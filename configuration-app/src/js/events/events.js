@@ -40,6 +40,8 @@ const GESTURES_EVENTS = {
 
 const SCENE_GRAPH_EVENTS = {
   INVALIDATE_SCENE: "scenegraph:global:invalidate",
+
+  NEW_SCENE: "scenegraph:global:new",
 };
 
 const MODEL_EVENTS = {
@@ -67,6 +69,13 @@ class Events {
 
   static invalidateSceneGraph(sceneGraph) {
     const evtName = Events.sceneGraph.INVALIDATE_SCENE;
+    sceneGraph.messageBus.emit(evtName, new UiEvent(evtName, {
+      "sceneGraph": sceneGraph,
+    }));
+  }
+
+  static newSceneGraph(sceneGraph) {
+    const evtName = Events.sceneGraph.NEW_SCENE;
     sceneGraph.messageBus.emit(evtName, new UiEvent(evtName, {
       "sceneGraph": sceneGraph,
     }));

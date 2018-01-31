@@ -32,12 +32,17 @@ echo "Configuring configuration-api"
 create_venv $(pwd)/configuration-api-env $(pwd)/src
 popd
 
-pushd ./logging-api
+pushd logging-api
 echo "Configuring logging-api"
 create_venv $(pwd)/logging-api-env $(pwd)/src
 popd
 
-pushd ./provisioning-api
+pushd provisioning-api
 echo "Configuring provisioning-api"
 create_venv $(pwd)/provisioning-api-env $(pwd)/src
+popd
+
+pushd scenegraph-api
+echo "Configuring scenegraph-api"
+create_venv $(pwd)/scenegraph-api-env $(pwd)/src
 popd

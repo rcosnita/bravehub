@@ -6,5 +6,9 @@
   "configuration-api.api": {
     "prefix": "configuration-api.api.internal",
     "port": 5000
+  },
+  "scenegraph-api.api": {
+    "prefix": "scenegraph-api.api.internal",
+    "port": 5030
   }
 }

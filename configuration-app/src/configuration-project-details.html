@@ -13,7 +13,11 @@
         <paper-input label="domain" required value="{{projectModel.domain}}"></paper-input>
         <paper-textarea label="description" required value="{{projectModel.description}}"></paper-textarea>
 
-        <paper-button raised on-click="createProject">Create</paper-button>
+        <paper-button raised on-click="createProject">
+          <template is="dom-if" if="{{isNew}}"><span>Create</span></template>
+
+          <template is="dom-if" if="{{!isNew}}"><span>Update</span></template>
+        </paper-button>
       </form>
     </iron-form>
   </template>

@@ -2,7 +2,7 @@
 
 import Editor from "./editor.js";
 
-export default class ApiEditor extends Editor {
+export default class ProjectEditor extends Editor {
   constructor(opts) {
     super();
     this._component = undefined;
@@ -13,6 +13,7 @@ export default class ApiEditor extends Editor {
 
   restore(opts) {
     const model = opts.model;
+    this._component.projectModel = { };
     this._component.projectModel = model;
     this._component.messageBus = opts.messageBus;
   }

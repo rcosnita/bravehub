@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+          "name": "Scenegraph api docker debug",
+          "type": "python",
+          "request": "attach",
+          "localRoot": "${workspaceRoot}/src",
+          "remoteRoot": "/root/scenegraph-api/src",
+          "port": 3030,
+          "secret": "my_secret",
+          "host":"localhost"
+      }
+    ]
+ }

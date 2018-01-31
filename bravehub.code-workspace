@@ -14,11 +14,21 @@
 		},
 		{
 			"path": "load-balancer"
+		},
+		{
+			"path": "scenegraph-api"
+		},
+		{
+			"path": "configuration-app"
 		}
 	],
 	"settings": {
 		"files.associations": {
 			"ngx_core.h": "c"
-		}
+		},
+		"files.insertFinalNewline": true,
+		"files.trimTrailingWhitespace": true,
+		"editor.tabSize": 2,
+		"editor.insertSpaces": true,
 	}
 }
