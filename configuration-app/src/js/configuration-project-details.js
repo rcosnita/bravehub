@@ -7,6 +7,10 @@ class ConfigurationProjectDetails extends Polymer.Element {
 
   static get properties() {
     return {
+      isNew: {
+        type: Boolean,
+        notify: true,
+      },
       projectModel: {
         type: Object,
         notify: true,
@@ -26,6 +30,7 @@ class ConfigurationProjectDetails extends Polymer.Element {
   }
 
   createProject() {
+    // TODO (rcosnita) add support for update operations.
     const action = Rx.DOM.ajax({  // eslint-disable-line no-undef
       url: this._constants.PROJECTS_URL,
       method: "POST",
@@ -39,6 +44,10 @@ class ConfigurationProjectDetails extends Polymer.Element {
       (resp) => this._handleProjectCreated(resp),
       (err) => console.log(err)  // eslint-disable-line no-console
     );
+  }
+
+  _isModelNew() {
+    return this.projectModel && !this.projectModel.id;
   }
 
   _handleProjectCreated(resp) {
@@ -68,6 +77,11 @@ class ConfigurationProjectDetails extends Polymer.Element {
     this.messageBus.emit(evtName, new UiEvent(evtName, {
       "node": this,
     }));
+
+    const invalidateEvtName = Events.sceneGraph.INVALIDATE_SCENE;
+    this.messageBus.emit(invalidateEvtName, new UiEvent(invalidateEvtName, {
+      "node": this,
+    }));
   }
 
   _whenProjectModel(projectModel) {
@@ -83,6 +97,7 @@ class ConfigurationProjectDetails extends Polymer.Element {
       return;
     }
 
+    this.isNew = this._isModelNew();
     const evtName = Events.models.SET_CURRENT_PROJECT;
     this.messageBus.emit(evtName, new ModelEvent(evtName, {
       "model": this.projectModel,

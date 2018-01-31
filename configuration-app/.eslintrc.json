@@ -23,6 +23,7 @@
     "Float32Array": true,
     "Polymer": true,
     "Proxy": true,
-    "Uint8Array": true
+    "Uint8Array": true,
+    "Promise": true
   }
 }

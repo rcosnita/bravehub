@@ -1,0 +1,16 @@
+{
+    "python.unitTest.unittestArgs": [
+        "-v",
+        "-s",
+        "./src/tests",
+        "-p",
+        "test_*.py"
+    ],
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylintArgs": [
+        "--rcfile", "${workspaceRoot}/../.pylintrc"        
+    ],
+    "python.unitTest.unittestEnabled": true,
+    "python.venvPath": "${workspaceRoot}/scenegraph-api-env",
+    "python.pythonPath": "${workspaceRoot}/scenegraph-api-env/bin/python3"
+}

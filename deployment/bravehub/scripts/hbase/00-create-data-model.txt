@@ -19,8 +19,7 @@ create "bravehub:projectowners", "attrs", "projects"
 put "bravehub:projectowners", "3746656e-c319-447f-9fc1-2f85f1cbcd33", "attrs:email", "radu.cosnita@gmail.com"
 put "bravehub:projectowners", "3746656e-c319-447f-9fc1-2f85f1cbcd33", "attrs:authentication_provider", "github"
 put "bravehub:projectowners", "3746656e-c319-447f-9fc1-2f85f1cbcd33", "attrs:authorization_provider", "bravehub"
-put "bravehub:projectowners", "3746656e-c319-447f-9fc1-2f85f1cbcd33",
-"projects:5cf47fb5-ab1e-485b-9934-3e8cd062487e", "{\"name\": \"Project 1\", \"description\": \"First project ever deployed on Bravehub platform.\", \"domain\": \"myproject\"}"
+# put "bravehub:projectowners", "3746656e-c319-447f-9fc1-2f85f1cbcd33","projects:5cf47fb5-ab1e-485b-9934-3e8cd062487e", "{\"name\": \"Project 1\", \"description\": \"First project ever deployed on Bravehub platform.\", \"domain\": \"myproject\"}"
 
 # A simple example which retrieve all owners which belong to bravehub authorization provider.
 # For more details, read deployment/examples/happybase-sample.py.
@@ -34,40 +33,37 @@ scan 'bravehub:projectowners', { FILTER => SingleColumnValueFilter.new(Bytes.toB
 create "bravehub:projects", "attrs", "owner", "apis"
 put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "attrs:name", 
 "Project 1"
-put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "attrs:description", "First project ever deployed on Bravehub platform."
-put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "attrs:domain", "myproject"
-put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "owner:id", "3746656e-c319-447f-9fc1-2f85f1cbcd33"
-put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "apis:4a674c39-f239-4717-a97e-983a201ece7d", "{\"path\": \"/api/v1/news\"}"
+# put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "attrs:description", "First project ever deployed on Bravehub platform."
+# put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "attrs:domain", "myproject"
+# put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "owner:id", "3746656e-c319-447f-9fc1-2f85f1cbcd33"
+# put "bravehub:projects", "5cf47fb5-ab1e-485b-9934-3e8cd062487e", "apis:4a674c39-f239-4717-a97e-983a201ece7d", "{\"path\": \"/api/v1/news\"}"
 
 
 create "bravehub:apis", "attrs", "project", "builds"
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "attrs:path", "/api/v1/news"
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "attrs:ports", "[ 80 ]"
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "project:id", "5cf47fb5-ab1e-485b-9934-3e8cd062487e"
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "project:name", "Project 1"
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-attrs", "{\"id\": \"bb30d77f-0f0f-49fb-9439-243448422ddb\", \"description\": \"The first working version of the news api.\"}"
+# put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "attrs:path", "/api/v1/news"
+# put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "attrs:ports", "[ 80 ]"
+# put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "project:id", "5cf47fb5-ab1e-485b-9934-3e8cd062487e"
+# put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "project:name", "Project 1"
+# put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-attrs", "{\"id\": \"bb30d77f-0f0f-49fb-9439-243448422ddb\", \"description\": \"The first working version of the news api.\"}"
 
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", 
-"builds:counter", 1
+# put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:counter", 1
 
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", 
-"builds:1-secrets", "[{\"id\": \"c9e4cad2-113d-4711-b7a7-1059440c75e7\", \"key\": \"AWS_ACCESS_TOKEN\", \"value\": \"sample secret\"}]"
+# put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-secrets", "[{\"id\": \"c9e4cad2-113d-4711-b7a7-1059440c75e7\", \"key\": \"AWS_ACCESS_TOKEN\", \"value\": \"sample secret\"}]"
 
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", 
-"builds:1-env", "[{\"id\": \"c9e4cad2-113d-4711-b7a7-1059440c75e7\", \"key\": \"ENVIRONMENT\", \"value\": \"dev\"}, {\"id\": \"c9e4cad2-113d-4711-b7a7-1059440c75e9\", \"key\": \"S3_BINARIES_BUCKET\", \"value\": \"myapp-binaries-bucket\"}]"
+# put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-env", "[{\"id\": \"c9e4cad2-113d-4711-b7a7-1059440c75e7\", \"key\": \"ENVIRONMENT\", \"value\": \"dev\"}, {\"id\": \"c9e4cad2-113d-4711-b7a7-1059440c75e9\", \"key\": \"S3_BINARIES_BUCKET\", \"value\": \"myapp-binaries-bucket\"}]"
 
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-assets-c9e4cad2-113d-4711-b7a7-1059440c75eg", "{\"download_path\": \"/projects/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/1/configs/assets/c9e4cad2-113d-4711-b7a7-1059440c75eg/configs/app-meta.json\",\"mount_path\": \"\/configs/app-meta.json\", \"file_size\": 48, \"md5sum\": \"0592e01af3690520f281be5291b663b1\"}"
+# put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-assets-c9e4cad2-113d-4711-b7a7-1059440c75eg", "{\"download_path\": \"/projects/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/1/configs/assets/c9e4cad2-113d-4711-b7a7-1059440c75eg/configs/app-meta.json\",\"mount_path\": \"\/configs/app-meta.json\", \"file_size\": 48, \"md5sum\": \"0592e01af3690520f281be5291b663b1\"}"
 
-put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-droplet", "{\"id\": \"df3feba0-73cb-4f36-9455-039cd2a9d5bb\", \"download_path\": \"/projects/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/1/droplets/1.tar.gz\", \"md5sum\": \"6efc84ff2f55345b059806e1a1485e2b\", \"file_size\": \"207\"}"
+# put "bravehub:apis", "4a674c39-f239-4717-a97e-983a201ece7d", "builds:1-droplet", "{\"id\": \"df3feba0-73cb-4f36-9455-039cd2a9d5bb\", \"download_path\": \"/projects/5cf47fb5-ab1e-485b-9934-3e8cd062487e/4a674c39-f239-4717-a97e-983a201ece7d/1/droplets/1.tar.gz\", \"md5sum\": \"6efc84ff2f55345b059806e1a1485e2b\", \"file_size\": \"207\"}"
 
 create "bravehub:apiinfrastructure", "attrs", "state"
-put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "attrs:entry_point", "java -jar myapp.jar"
-put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "attrs:running", true
-put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:config_id", "bb30d77f-0f0f-49fb-9439-243448422ddb"
-put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:deployed", "true"
-put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:deployed_date", "2017-08-11 15:00:00"
-put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:deployed_date_ts", 1502463600
-put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:desired_instances", 5
+# put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "attrs:entry_point", "java -jar myapp.jar"
+# put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "attrs:running", true
+# put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:config_id", "bb30d77f-0f0f-49fb-9439-243448422ddb"
+# put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:deployed", "true"
+# put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:deployed_date", "2017-08-11 15:00:00"
+# put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:deployed_date_ts", 1502463600
+# put "bravehub:apiinfrastructure", "128205fd-e134-43f3-a92d-654e6a21766f", "state:desired_instances", 5
 
 create "bravehub:provisioningtasks", "attrs", "states"
 
@@ -78,5 +74,7 @@ put "bravehub:provisioningmetaports", "2b71ac92-49c5-4bbb-af52-4cfd7d7ea9ee-1000
 create "bravehub:provisioningmetaportsmapping", "api"
 
 create "bravehub:domains", "api"
+
+create "bravehub:scenegraphs", "scene"
 
 exit

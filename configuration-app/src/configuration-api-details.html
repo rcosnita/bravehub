@@ -50,9 +50,14 @@
             <configuration-upload-file folder-upload label="Config files" files-content="{{configFiles}}"></configuration-upload-file>
           </template>
 
-          <!-- <paper-button raised>Update</paper-button> -->
           <template is="dom-if" if="{{projectModel}}">
-            <paper-button raised on-click="createApi">Create</paper-button>
+
+
+            <paper-button raised on-click="createApi">
+              <template is="dom-if" if="{{isNew}}"><span>Create</span></template>
+
+              <template is="dom-if" if="{{!isNew}}"><span>Update</span></template>
+            </paper-button>
           </template>
         </form>
       </iron-form>

@@ -15,6 +15,7 @@ export default class ApiEditor extends Editor {
   restore(opts) {
     const model = opts.model;
 
+    this._component.apiModel = { };
     this._component.apiModel = model;
     this._component.messageBus = opts.messageBus;
 
@@ -28,7 +29,6 @@ export default class ApiEditor extends Editor {
     this._component.style.visibility = "hidden";
     this._component.style.position = "absolute";
     this._component.apiModel = { };
-    this._component.isNew = true;
   }
 
   _fetchCurrentProject(messageBus) {

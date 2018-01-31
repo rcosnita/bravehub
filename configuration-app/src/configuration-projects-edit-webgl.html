@@ -1,0 +1,78 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymer/lib/elements/dom-repeat.html">
+<link rel="import" href="../bower_components/polymer/lib/elements/dom-if.html">
+<link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../bower_components/neon-animation/web-animations.html">
+
+<link rel="import" href="configuration-api-details.html">
+<link rel="import" href="configuration-project-details.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="configuration-projects-edit-webgl">
+    <template>
+        <style include="shared-styles">
+          :host {
+            display: block;
+            padding: 10px;
+
+            --side-menu-min-height: 500px;
+            --side-menu-min-width: 150px;
+            --side-menu-max-width: 300px;
+
+            --api-details-background: rgba(255, 255, 255, 0.5);
+          }
+
+          div.drawing-area {
+            display: flex;
+            width: 100%;
+            min-height: var(--side-menu-min-height);
+          }
+
+          div.side-menu {
+            min-height: var(--side-menu-min-height);
+            min-width: var(--side-menu-min-width);
+            max-width: var(--side-menu-max-width);
+          }
+
+          canvas.projects {
+            display: block;
+            border: 5px solid black;
+            outline: none;
+          }
+        </style>
+
+        <div class="card">
+          <div class="circle">3</div>
+
+          <div class="drawing-area">
+            <div class="side-menu">
+              <template is="dom-if" if="[[projects]]">
+                <paper-dropdown-menu selected-item="{{selectedProject}}">
+                  <paper-listbox slot="dropdown-content" selected="0">
+                    <template is="dom-repeat" items="[[projects]]">
+                      <paper-item value="{{item.id}}">{{item.name}}</paper-item>
+                    </template>
+                  </paper-listbox>
+                </paper-dropdown-menu>
+              </template>
+
+              <template is="dom-if" if="{{selectedProject}}">
+                <br/>
+                <input type="button" value="New api" on-click="_addNode" data-item-type="api"></input>
+              </template>
+            </div>
+            <canvas id="projectsCanvas" width="800" height="500" class="projects"></canvas>
+        </div>
+        </div>
+
+        <slot></slot>
+    </template>
+
+    <script type="text/javascript" src="js/constants.js"></script>
+    <script type="text/javascript" src="../third-party/eventemitter3/index.js"></script>
+    <script type="text/javascript" src="../third-party/glm-js/build/glm-js.min.js"></script>
+    <script type="text/javascript" src="../third-party/tarballjs/tarball.js"></script>
+    <script type="module" src="./js/configuration-projects-edit-webgl.js"></script>
+</dom-module>

@@ -17,6 +17,7 @@ export class Node {
     this._editorUI = undefined;
     this._messageBus = undefined;
     this._sceneGraph = undefined;
+    this._type = undefined;
   }
 
   _appendChild(node) {
@@ -37,6 +38,9 @@ export class Node {
   set parent(p) { this._parent = p; }
 
   get texture() { return this._texture; }
+
+  get type() { return this._type; }
+  set type(value) { this._type = value; }
 
   set _vertices(vertices) {
     this._verticesValue = vertices;
@@ -135,7 +139,7 @@ export default class SceneGraph {
   addNode(node) {
     node._sceneGraph = this;
     node._messageBus = this._messageBus;
-    this._nodes.splice(0, 0, node);
+    this._nodes.splice(0, 0, node); // This causes memory displacement but helps us conserve z-index correctly.
   }
 
   removeNode(node) {
@@ -182,6 +186,12 @@ export default class SceneGraph {
 
   _wireEvents() {
     this._messageBus.on(Events.sceneGraph.INVALIDATE_SCENE, () => {
+      this.dirty = true;
+    });
+
+    this._messageBus.on(Events.sceneGraph.NEW_SCENE, () => {
+      this.dirty = false;
+      this._nodes.length = 0;
       this.dirty = true;
     });
   }
