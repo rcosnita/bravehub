@@ -71,9 +71,9 @@ class DockerEngineImageRunner(ImageRunner):
   """Provides an implementation for the docker engine. This is designed to work on development
   environments."""
 
-  def __init__(self, hbase_conn_pool, default_charset, metaports_mapping_service, docker_client):
+  def __init__(self, hbase_conn_pool, default_charset, metaports_mapping_service, docker_client, metaports_service): # pylint: disable=line-too-long
     super(DockerEngineImageRunner, self).__init__(hbase_conn_pool, default_charset,
-                                                  metaports_mapping_service)
+                                                  metaports_mapping_service, metaports_service)
     self._docker_client = docker_client
 
   def _create_network(self, image_ctx, runner_ctx, port_mappings):
@@ -88,10 +88,11 @@ class DockerEngineImageRunner(ImageRunner):
 
   def _deploy_image(self, image_ctx, runner_ctx, port_mappings, network_name):
     image_tag = runner_ctx.image_tag
-    running_containers = self._docker_client.containers.list()
-    if running_containers:
-      existing_runnning_container = running_containers.get(image_tag)
-      if existing_runnning_container:
-        existing_runnning_container.stop()
+
+    #check if this is an existing API and stop the current container if it's going
+    running_container = [c for c in self._docker_client.containers.list()
+                         if c.attrs['Config']['Image'] == image_tag]
+    if running_container:
+      running_container[0].remove(v=True, force=True) # also remove volume.
     self._docker_client.containers.run(image_tag, auto_remove=True, network=network_name,
                                        detach=True, ports=port_mappings)
