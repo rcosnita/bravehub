@@ -81,8 +81,8 @@ upload_image ${CONFIGURATION_API_IMAGE_NAME} configuration-api ${BRAVEHUB_VERSIO
 
 cd ${WORKDIR}
 CONFIGURATION_APP_IMAGE_NAME="bravehub/configuration-app:${BRAVEHUB_VERSION}"
-docker-compose build configuration-app.api.internal.bravehub-dev.com && cd deploymentWORKDIR}
-cd deployment/../configuration-app && docker build -t ${CONFIGURATION_APP_IMAGE_NAME} -f Dockerfile-prod .
+docker-compose build configuration-app.api.internal.bravehub-dev.com && cd ${WORKDIR}
+cd configuration-app && docker build -t ${CONFIGURATION_APP_IMAGE_NAME} -f Dockerfile-prod .
 upload_image ${CONFIGURATION_APP_IMAGE_NAME} configuration-app ${BRAVEHUB_VERSION}
 
 cd ${WORKDIR}
@@ -92,5 +92,5 @@ upload_image ${PROVISIONING_API_IMAGE_NAME} provisioning-api ${BRAVEHUB_VERSION}
 
 cd ${WORKDIR}
 ROUTER_IMAGE_NAME="bravehub/router:${BRAVEHUB_VERSION}"
-cd deployment/../load-balancer && docker build -t ${ROUTER_IMAGE_NAME} -f Dockerfile .
+cd load-balancer && docker build -t ${ROUTER_IMAGE_NAME} -f Dockerfile .
 upload_image ${ROUTER_IMAGE_NAME} router ${BRAVEHUB_VERSION}
