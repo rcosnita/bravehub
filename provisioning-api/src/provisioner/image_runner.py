@@ -21,10 +21,9 @@ class ImageRunner(ABC):
   """Provides the contract which must be implemented by each image runner. Depending on the
   orchestrator we want to use we are going to use a specific runner."""
 
-  def __init__(self, hbase_conn_pool, default_charset, metaports_mapping_service, metaports_service): # pylint: disable=line-too-long
+  def __init__(self, hbase_conn_pool, default_charset, metaports_service):
     self._hbase_conn_pool = hbase_conn_pool
     self._default_charset = default_charset
-    self._metaports_mapping_service = metaports_mapping_service
     self._metaports_service = metaports_service
 
   @property
@@ -44,7 +43,7 @@ class ImageRunner(ABC):
   def _choose_ports(self, image_ctx, runner_ctx, port_mappings):  # pylint: disable=unused-argument
     api_id = image_ctx.api_id
     for port in port_mappings.keys():
-      public_port = self._metaports_mapping_service.get_port_mappings(api_id)
+      public_port = self._metaports_service.get_port_mappings(api_id)
       if not public_port:
         public_port = self._metaports_service.reserve_next_free_port(api_id)
 
@@ -54,7 +53,7 @@ class ImageRunner(ABC):
 
       port_mappings[port] = public_port
 
-    self._metaports_mapping_service.save_port_mappings(api_id, port_mappings)
+    self._metaports_service.save_port_mappings(api_id, port_mappings)
 
   @abstractmethod
   def _create_network(self, image_ctx, runner_ctx, port_mappings):
@@ -71,9 +70,8 @@ class DockerEngineImageRunner(ImageRunner):
   """Provides an implementation for the docker engine. This is designed to work on development
   environments."""
 
-  def __init__(self, hbase_conn_pool, default_charset, metaports_mapping_service, docker_client, metaports_service): # pylint: disable=line-too-long
-    super(DockerEngineImageRunner, self).__init__(hbase_conn_pool, default_charset,
-                                                  metaports_mapping_service, metaports_service)
+  def __init__(self, hbase_conn_pool, default_charset, metaports_service, docker_client): # pylint: disable=line-too-long
+    super(DockerEngineImageRunner, self).__init__(hbase_conn_pool, default_charset, metaports_service) # pylint: disable=line-too-long
     self._docker_client = docker_client
 
   def _create_network(self, image_ctx, runner_ctx, port_mappings):
