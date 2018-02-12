@@ -14,10 +14,19 @@ import Project from "./rendering/shapes/project.js";
 export default class ConfigurationProjectsWebGl extends Polymer.Element {
   static get is() { return "configuration-projects-webgl"; }
 
+  static get properties() {
+    return {
+      projectModel: {
+        type: Object,
+        notify: true,
+        value: {},
+      },
+    };
+  }
+
   constructor() {
     super();
 
-    const self = this;
     this._editorFactory = new EditorUIFactory(this);
     this._messageBus = new MessageBus();
     this._deleteHandlers = [
@@ -25,7 +34,7 @@ export default class ConfigurationProjectsWebGl extends Polymer.Element {
       [Project, (evt) => this._deleteProject(evt)],
     ];
     this._deleteHandlerFallback = (evt) => this._deleteNodeFallback(evt);
-    this._projectModel = undefined;
+    this.projectModel = undefined;
 
     this._supportedNodes = {
       "project": {
@@ -70,6 +79,7 @@ export default class ConfigurationProjectsWebGl extends Polymer.Element {
 
   ready() {
     super.ready();
+
     this._canvas = this.$.projectsCanvas;
 
     this._renderer = new Renderer(this._canvas, this._sceneGraph);
@@ -125,18 +135,18 @@ export default class ConfigurationProjectsWebGl extends Polymer.Element {
 
     const evtProjectSet = Events.models.SET_CURRENT_PROJECT;
     this._messageBus.on(evtProjectSet, (evt) => {
-      this._projectModel = evt.model;
+      this.projectModel = evt.model;
     });
 
     const evtProjectGet = Events.models.GET_CURRENT_PROJECT_LOADED;
     this._messageBus.on(Events.models.GET_CURRENT_PROJECT, (evt) => {
       // TODO (rcosnita) find a better way to prevent get current project errors ...
-      if (!this._projectModel) {
+      if (!this.projectModel) {
         throw new Error("No project available ....");
       }
 
       this._messageBus.emit(evtProjectGet, new ModelEvent(evtProjectGet, {
-        "model": this._projectModel,
+        "model": this.projectModel,
       }));
     });
   }
