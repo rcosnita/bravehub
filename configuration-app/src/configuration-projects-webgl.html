@@ -42,9 +42,13 @@
 
       <div class="drawing-area">
         <div class="side-menu">
-           <input type="button" value="New project" on-click="_addNode" data-item-type="project"></input>
+          <template is="dom-if" if="{{!projectModel}}">
+            <input type="button" value="New project" on-click="_addNode" data-item-type="project"></input>
+          </template>
 
-           <input type="button" value="New api" on-click="_addNode" data-item-type="api"></input>
+          <template is="dom-if" if="{{projectModel}}">
+            <input type="button" value="New api" on-click="_addNode" data-item-type="api"></input>
+          </template>
         </div>
         <canvas id="projectsCanvas" width="800" height="500" class="projects"></canvas>
     </div>
