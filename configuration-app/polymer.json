@@ -3,7 +3,6 @@
   "shell": "src/configuration-app.html",
   "fragments": [
     "src/configuration-api-details.html",
-    "src/configuration-manage-projects.html",
     "src/configuration-project-details.html",
     "src/configuration-projects-webgl.html",
     "src/configuration-upload-file.html",
