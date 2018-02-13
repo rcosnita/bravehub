@@ -12,6 +12,8 @@ from bravehub_shared.services.id_generator import IdGeneratorService
 from bravehub_shared.services.api_client import ApiClient
 from bravehub_shared.services.file_system import LocalFileSystem
 
+from bravehub_shared.services.security.oauth2_client import OAuth2Client
+
 class CoreContainer(DeclarativeContainer): # pylint: disable=too-few-public-methods
   """Provides the core bindings used in all bravehub modules and micro services."""
 
@@ -36,3 +38,12 @@ class ApiClientsContainer(DeclarativeContainer): # pylint: disable=too-few-publi
   provisioning_api = Singleton(ApiClient, api_name="provisioning-api",
                                cluster_suffix=CoreContainer.config.cluster_suffix,
                                http_client=request, api_port=5020)
+
+class OAuth2ClientContainer(DeclarativeContainer):  # pylint: disable=too-few-public-methods
+  """Provides all services required by clients to work with oauth 2 framework."""
+
+  oauth2_api = Singleton(ApiClient, api_name="identity-api",
+                         cluster_suffix=CoreContainer.config.cluster_suffix,
+                         http_client=request, api_port=5040)
+
+  client = Singleton(OAuth2Client, oauth2_api=oauth2_api)
