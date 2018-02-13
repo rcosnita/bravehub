@@ -1,4 +1,7 @@
 {
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "editor.tabSize": 2,
     "python.unitTest.unittestArgs": [
         "-v",
         "-s",
