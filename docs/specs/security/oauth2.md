@@ -65,9 +65,6 @@ quickly validate a token, we are going to use the following structure:
     "publicToken": "base64 representation of the public token representation.",
     "scopes": [
       "bravehub.projectowners.view",
-      "bravehub.projectowners.create",
-      "bravehub.projectowners.update",
-      "bravehub.projectowners.delete",
       "bravehub.projects.list",
       "bravehub.projects.create",
       "bravehub.projects.update",
