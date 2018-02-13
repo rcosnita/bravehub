@@ -14,6 +14,7 @@ The platform for planning, deploying and releasing new innovators ideas.
 # Specs
 
 * [Deployment](deployment/README.md)
+* [OAuth2](docs/specs/security/oauth2.md)
 * [Projects editor](docs/specs/projects-editor.md)
 * [Storage](docs/specs/storage.md)
 * [Service discovery](docs/specs/service-discovery.md)
