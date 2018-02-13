@@ -227,7 +227,7 @@ class ApiClientTests(unittest.TestCase): # pylint: disable=missing-docstring
 
       expected_req_body = req_body
       if method in ["PUT", "POST"]:
-        expected_req_body = json.dumps(req_body or {})
+        expected_req_body = json.dumps(req_body or {}).encode("UTF-8")
 
       self._http_client.Request.assert_called_with(expected_url,
                                                    headers={"Content-Type": "application/json"},
