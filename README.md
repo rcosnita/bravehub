@@ -34,6 +34,8 @@ In order to start the platform follow the steps below:
 1. Start platform.
 
     ```bash
+    sh deployment/provisioning/build-images.sh # you can safely ignore the errors.
+    docker-compose build
     docker-compose up
     ```
 
