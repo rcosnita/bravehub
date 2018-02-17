@@ -20,7 +20,7 @@ class ConfigurationApp extends Polymer.Element {
     ];
   }
 
-  static get defaultView() { return "configuration-manage-projects"; }
+  static get defaultView() { return "configuration-projects-edit-webgl"; }
 
   _routePageChanged(page) {
     this.page = page || ConfigurationApp.defaultView;
