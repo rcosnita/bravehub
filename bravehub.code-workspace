@@ -20,6 +20,9 @@
 		},
 		{
 			"path": "configuration-app"
+		},
+		{
+			"path": "identity-api"
 		}
 	],
 	"settings": {

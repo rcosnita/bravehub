@@ -46,3 +46,8 @@ pushd scenegraph-api
 echo "Configuring scenegraph-api"
 create_venv $(pwd)/scenegraph-api-env $(pwd)/src
 popd
+
+pushd identity-api
+echo "Configuring identity-api"
+create_venv $(pwd)/identity-api-env $(pwd)/src
+popd

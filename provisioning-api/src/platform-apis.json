@@ -10,5 +10,9 @@
   "scenegraph-api.api": {
     "prefix": "scenegraph-api.api.internal",
     "port": 5030
+  },
+  "identity-api.api": {
+    "prefix": "identity-api.api.internal",
+    "port": 5040
   }
 }

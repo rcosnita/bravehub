@@ -107,13 +107,36 @@ services:
       FLASK_APP: src/app.py
       PYTHONPATH: .:src
       HBASE_THRIFT_API: hbase-thrift.api.internal.bravehub-dev.com
-      WORKER_DOMAIN: 172.18.0.1
     ports:
       - "127.0.0.1:5030:5030"
       - "127.0.0.1:3030:3030"
     volumes:
       - ./scenegraph-api:/root/scenegraph-api:consistent
       - ./bravehub_shared:/root/scenegraph-api/src/bravehub_shared:consistent
+    networks:
+      - bravehub-overlay
+  identity-api.api.internal.bravehub-dev.com:
+    build:
+      context: .
+      dockerfile: identity-api/Dockerfile
+    entrypoint:
+      - sh
+      - "-c"
+      # - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 0.1; done && gunicorn --bind 0.0.0.0:5000 --threads 10 src.wsgi:app"
+      - "while ! nc -z $${HBASE_THRIFT_API} 9090; do sleep 0.1; done && flask run --host=0.0.0.0  --port=5040"
+    environment:
+      BRAVEHUB_DEBUG: 1
+      BRAVEHUB_SUFFIX: "bravehub-dev.com"
+      FLASK_DEBUG: 1
+      FLASK_APP: src/app.py
+      PYTHONPATH: .:src
+      HBASE_THRIFT_API: hbase-thrift.api.internal.bravehub-dev.com
+    ports:
+      - "127.0.0.1:5040:5040"
+      - "127.0.0.1:3050:3050"
+    volumes:
+      - ./identity-api:/root/identity-api:consistent
+      - ./bravehub_shared:/root/identity-api/src/bravehub_shared:consistent
     networks:
       - bravehub-overlay
   provisioner-api.api.internal.bravehub-dev.com:
