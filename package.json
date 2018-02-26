@@ -1,7 +1,0 @@
-{
-    "name": "bravehub",
-    "version": "0.1.0",
-    "devDependencies": {
-        "aglio": "2.3.0"
-    }
-}

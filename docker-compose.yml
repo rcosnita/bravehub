@@ -115,6 +115,19 @@ services:
       - ./bravehub_shared:/root/scenegraph-api/src/bravehub_shared:consistent
     networks:
       - bravehub-overlay
+  identity-app.api.internal.bravehub-dev.com:
+    build: identity-app
+    entrypoint:
+      - sh
+      - "-c"
+      - "npm start"
+    ports:
+      - "127.0.0.1:9001:8081"
+    volumes:
+      - ./identity-app/src:/root/src:consistent
+      - ./identity-app/third-party:/root/third-party:consistent
+    networks:
+      - bravehub-overlay
   identity-api.api.internal.bravehub-dev.com:
     build:
       context: .

@@ -14,5 +14,9 @@
   "identity-api.api": {
     "prefix": "identity-api.api.internal",
     "port": 5040
+  },
+  "identity-app.api": {
+    "prefix": "identity-app.api.internal",
+    "port": 8081
   }
 }
